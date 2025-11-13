@@ -470,7 +470,7 @@ import React, { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { Users, Calendar, IndianRupee, AlertCircle, FileText } from 'lucide-react'
-import { groupService, cycleService, paymentService } from '../services/api.js'
+import { groupService, cycleService, paymentService, phonepeService } from '../services/api.js'
 import InviteMembers from '../components/Groups/InviteMembers.jsx'
 import PendingRequests from '../components/Groups/PendingRequests.jsx'
 
@@ -506,38 +506,51 @@ const GroupDetails = () => {
   })
 
   // Mutation to mark payment as paid
-  const markAsPaidMutation = useMutation({
-    mutationFn: ({ cycleId, proof }) => {
-      const formData = new FormData()
-      formData.append('cycleId', cycleId)
-      if (proof) formData.append('proof', proof)
-      return paymentService.recordPayment(formData)
-    },
-    onSuccess: () => {
-      window.location.reload() // Refresh to show updated status
-    }
-  })
+const markAsPaidMutation = useMutation({
+  mutationFn: ({ cycleId, proof }) => {
+    const formData = new FormData()
+    formData.append('cycleId', cycleId)
+    if (proof) formData.append('proof', proof)
+    console.log('🧾 FormData contents before upload:', {
+      cycleId,
+      proofName: proof?.name,
+      proofType: proof?.type,
+    })
+    return paymentService.recordPayment(formData)
+  },
+  onSuccess: (res) => {
+    console.log('✅ Payment proof uploaded successfully:', res)
+    window.location.reload()
+  },
+  onError: (err) => {
+    console.error('❌ Payment upload failed:', err?.response?.data || err.message)
+  }
+})
+
 
   // Track which payment is being verified for loading state
   const [verifyingPaymentId, setVerifyingPaymentId] = useState(null)
   // Mutation for organizer to verify payment
   const verifyPaymentMutation = useMutation({
-    mutationFn: ({ cycleId, paymentId }) => {
-      setVerifyingPaymentId(paymentId)
-      return paymentService.verifyPayment({ cycleId, paymentId })
-    },
-    onSuccess: () => {
-      // Refetch only cycles data for a smoother UX
-      setVerifyingPaymentId(null)
-      // Use react-query's refetch for cycles
-      if (typeof window !== 'undefined' && window.location) {
-        window.location.reload()
-      }
-    },
-    onSettled: () => {
-      setVerifyingPaymentId(null)
-    }
-  })
+  mutationFn: ({ cycleId, paymentId }) => {
+    console.log('🕵️‍♂️ Organizer verifying payment:', { cycleId, paymentId })
+    setVerifyingPaymentId(paymentId)
+    return paymentService.verifyPayment({ cycleId, paymentId })
+  },
+  onSuccess: (res) => {
+    console.log('✅ Payment verification success:', res)
+    setVerifyingPaymentId(null)
+    window.location.reload()
+  },
+  onError: (err) => {
+    console.error('❌ Payment verification failed:', err?.response?.data || err.message)
+    setVerifyingPaymentId(null)
+  },
+  onSettled: () => {
+    setVerifyingPaymentId(null)
+  }
+})
+
 
   const handleMarkAsPaid = (cycleId) => {
     setSelectedCycleId(cycleId)
@@ -547,15 +560,50 @@ const GroupDetails = () => {
     setProofFile(e.target.files[0])
   }
 
-  const handleSubmitProof = (cycleId) => {
-    markAsPaidMutation.mutate({ cycleId, proof: proofFile })
-    setProofFile(null)
-    setSelectedCycleId(null)
-  }
+ const handleSubmitProof = (cycleId) => {
+  console.log('📤 Submitting payment proof for:', { cycleId, proofFile })
+
+  markAsPaidMutation.mutate({ cycleId, proof: proofFile })
+  setProofFile(null)
+  setSelectedCycleId(null)
+}
+
 
   const handleVerifyPayment = (cycleId, paymentId) => {
     verifyPaymentMutation.mutate({ cycleId, paymentId })
   }
+
+
+
+
+
+
+
+
+
+  // Start PhonePe payment flow for this cycle (frontend triggers backend create-payment)
+const handlePhonePay = async (cycleId) => {
+  try {
+    const amount = group.monthlyContribution || 0
+    const name = currentUser?.name || currentUser?.membership?.user?.name || ''
+    console.log('📤 Initiating PhonePe payment with:', { name, amount, cycleId, groupId: id })
+
+    const resp = await phonepeService.createPayment({ name, amount, cycleId, groupId: id })
+console.log('✅ Full PhonePe API Response:', resp.data);
+alert(`Redirect URL received: ${resp.data.redirectUrl}`);
+    if (resp.data?.success && resp.data.redirectUrl) {
+      console.log('➡️ Redirecting to PhonePe URL:', resp.data.redirectUrl)
+      window.location.href = resp.data.redirectUrl
+    } else {
+      console.warn('⚠️ Payment initiation failed. Response:', resp.data)
+      alert('Failed to initiate payment')
+    }
+  } catch (err) {
+    console.error('❌ PhonePe create payment error', err?.response?.data || err.message)
+    alert('Error initiating payment')
+  }
+}
+
 
   if (isLoading) {
     return (
@@ -591,18 +639,17 @@ const GroupDetails = () => {
   const currentUser = groupData?.data?.currentUser
 
   // Debug output for cycles and payments
-  if (typeof window !== 'undefined') {
-    console.log('DEBUG: cycles', cycles)
-    if (cycles.length > 0) {
-      cycles.forEach((cycle, idx) => {
-        console.log(`Cycle ${idx + 1}:`, cycle)
-        if (cycle.payments) {
-          console.log('Payments:', cycle.payments)
-        }
-      })
-    }
-    console.log('Current user:', currentUser)
+ if (typeof window !== 'undefined') {
+  console.log('DEBUG: Current Group →', group)
+  console.log('DEBUG: Current User →', currentUser)
+  console.log('DEBUG: Cycles Data →', cycles)
+  if (cycles?.length > 0) {
+    cycles.forEach((cycle) => {
+      console.log(`Cycle ${cycle.cycleNumber} (${cycle._id}) payments →`, cycle.payments)
+    })
   }
+}
+
 
   if (!group) {
     return (
@@ -764,7 +811,7 @@ const GroupDetails = () => {
                       }`}>
                         {cycle.status}
                       </span>
-                      <p className="text-sm font-semibold text-gray-800 mt-1">₹{cycle.potAmount}</p>
+                      <p className="text-sm font-semibold text-gray-800 mt-1">₹{group.monthlyContribution}</p>
                     </div>
                   </div>
 
@@ -878,13 +925,20 @@ const GroupDetails = () => {
                           {hasPaid ? (
                             <div>
                               {isVerified ? (
-                                <span className="text-green-700 font-bold ml-2">Verified</span>
+                                <div>
+                                  <span className="text-green-700 font-bold ml-2">✅ Verified & Paid</span>
+                                  {proofUrl && proofUrl.startsWith('phonepe:') && (
+                                    <div className="text-xs text-gray-600 mt-1">
+                                      Transaction: {proofUrl.replace('phonepe:', '')}
+                                    </div>
+                                  )}
+                                </div>
                               ) : (
                                 <span className="text-yellow-600 font-bold ml-2">
                                   {isOrganizer ? 'Waiting for admin verification' : 'Request sent to organizer'}
                                 </span>
                               )}
-                              {proofUrl && (
+                              {proofUrl && !proofUrl.startsWith('phonepe:') && (
                                 <a
                                   href={proofUrl.startsWith('/uploads') ? `http://localhost:5000${proofUrl}` : proofUrl}
                                   target="_blank"
@@ -910,12 +964,20 @@ const GroupDetails = () => {
                                 >Cancel</button>
                               </div>
                             ) : (
-                              <button
-                                onClick={() => handleMarkAsPaid(cycle._id)}
-                                className="ml-2 bg-blue-600 text-white px-2 py-1 rounded"
-                              >
-                                {isOrganizer ? 'Pay as Organizer' : 'Mark as Paid'}
-                              </button>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handlePhonePay(cycle._id)}
+                                  className="ml-2 bg-green-600 text-white px-2 py-1 rounded"
+                                >
+                                  Pay
+                                </button>
+                                <button
+                                  onClick={() => handleMarkAsPaid(cycle._id)}
+                                  className="ml-2 bg-blue-600 text-white px-2 py-1 rounded"
+                                >
+                                  {isOrganizer ? 'Pay as Organizer' : 'Mark as Paid'}
+                                </button>
+                              </div>
                             )
                           )}
                         </>

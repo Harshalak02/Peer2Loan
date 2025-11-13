@@ -1,45 +1,53 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-require('dotenv').config();
-const joinRequestRoutes = require('./routes/joinRequests');
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+require("dotenv").config();
+const joinRequestRoutes = require("./routes/joinRequests");
 
 const app = express();
 
 // CORS configuration - allow frontend connection
-app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-const invitationRoutes = require('./routes/invitations');
+const invitationRoutes = require("./routes/invitations");
 // Serve uploaded payment proofs
-app.use('/uploads/payments', express.static(require('path').join(__dirname, 'uploads/payments')));
+app.use(
+  "/uploads/payments",
+  express.static(require("path").join(__dirname, "uploads/payments"))
+);
 // Database connection
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('✅ MongoDB Connected Successfully'))
-.catch(err => console.log('❌ MongoDB Connection Error:', err));
+mongoose
+  .connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ MongoDB Connected Successfully"))
+  .catch((err) => console.log("❌ MongoDB Connection Error:", err));
 
 // Import and use routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/groups', require('./routes/groups'));
-app.use('/api/members', require('./routes/members'));
-app.use('/api/cycles', require('./routes/cycles'));
-app.use('/api/payments', require('./routes/payments'));
-app.use('/api/invitations', invitationRoutes);
-app.use('/api/join-requests', joinRequestRoutes);
+app.use("/api/auth", require("./routes/auth"));
+app.use("/api/groups", require("./routes/groups"));
+app.use("/api/members", require("./routes/members"));
+app.use("/api/cycles", require("./routes/cycles"));
+app.use("/api/payments", require("./routes/payments"));
+app.use("/api/invitations", invitationRoutes);
+app.use("/api/join-requests", joinRequestRoutes);
+// mount PhonePe routes (use the file you already have)
+app.use("/api/phonepe", require("./routes/phonepeRoutes"));
 
 // Health check
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
-    message: 'Peer2Loan API is running!',
-    timestamp: new Date().toISOString() 
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    message: "Peer2Loan API is running!",
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -47,7 +55,7 @@ app.get('/api/health', (req, res) => {
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: 'Route not found'
+    message: "Route not found",
   });
 });
 
