@@ -20,7 +20,11 @@
     "moment": "^2.29.4",
     "mongoose": "^7.5.0",
     "multer": "^2.0.2",
-    "nodemailer": "^6.9.4"
+    "nodemailer": "^6.9.4",
+    "axios": "^1.13.2",
+    "crypto": "^1.0.1",
+    "pg-sdk-node": "^2.0.2",
+    "razorpay": "^2.9.2"
   },
   "devDependencies": {
     "jest": "^29.6.2",

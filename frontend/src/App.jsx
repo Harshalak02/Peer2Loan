@@ -16,6 +16,8 @@ import Profile from './pages/Profile.jsx'
 import JoinGroup from './pages/JoinGroup.jsx'
 import JoinGroupPreview from './pages/JoinGroupPreview.jsx'
 import GroupInfo from './pages/GroupInfo.jsx'
+import PhonePay from './pages/PhonePay.jsx'
+import PaymentStatus from './pages/PaymentStatus.jsx'
 
 // Components
 import Navbar from './components/Layout/Navbar.jsx'
@@ -100,6 +102,22 @@ function App() {
                       <JoinGroupPreview />
                     </ProtectedRoute>
                   } 
+                />
+                <Route
+                  path="/pay"
+                  element={
+                    <ProtectedRoute>
+                      <PhonePay />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/payment-status/:id"
+                  element={
+                    <ProtectedRoute>
+                      <PaymentStatus />
+                    </ProtectedRoute>
+                  }
                 />
               </Routes>
             </main>
