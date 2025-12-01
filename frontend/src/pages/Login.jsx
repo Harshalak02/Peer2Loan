@@ -1,3 +1,4 @@
+// ...existing code...
 import React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
@@ -81,6 +82,30 @@ const Login = () => {
         </button>
       </form>
       
+      <div className="mt-4">
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">Or continue with</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => window.open("http://localhost:5000/api/auth/google", "_self")}
+          className="mt-4 w-full flex items-center justify-center gap-2 border border-gray-300 bg-white py-2 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          <img 
+            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
+            alt="Google" 
+            className="w-5 h-5" 
+          />
+          <span className="text-gray-700 font-medium">Sign in with Google</span>
+        </button>
+      </div>
+
       <p className="mt-6 text-center text-gray-600">
         Don't have an account?{' '}
         <Link to="/register" className="text-blue-600 hover:underline">
@@ -92,3 +117,4 @@ const Login = () => {
 }
 
 export default Login
+// ...existing code...
