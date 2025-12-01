@@ -21,8 +21,14 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true,
+    // REQUIRED CHANGE: Only require password if googleId is missing
+    required: function() { return !this.googleId; },
     minlength: 6
+  },
+  googleId: { // ADD THIS
+    type: String,
+    unique: true,
+    sparse: true
   },
   profile: {
     avatar: String,
@@ -59,6 +65,8 @@ userSchema.pre('save', async function(next) {
 });
 
 userSchema.methods.correctPassword = async function(candidatePassword) {
+  // IMPORTANT: Update correctPassword to handle users without passwords
+  if (!this.password) return false; // Google users cannot login with password
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
