@@ -9,14 +9,13 @@ const CreateGroup = () => {
   const navigate = useNavigate()
   const { register, handleSubmit, formState: { errors }, watch } = useForm()
 
-  // In your CreateGroup.jsx, update the mutation to log the response
-const createGroupMutation = useMutation({
+  const createGroupMutation = useMutation({
   mutationFn: (groupData) => groupService.createGroup(groupData),
   onSuccess: (data) => {
     console.log('Group creation response:', data)
-    console.log('Group ID:', data.data._id) // Check if we're getting the ID
+    console.log('Group ID:', data.data._id)
     toast.success('Group created successfully!')
-    navigate(`/groups/${data.data._id}`)
+    navigate('/')
   },
   onError: (error) => {
     console.error('Group creation error:', error)
