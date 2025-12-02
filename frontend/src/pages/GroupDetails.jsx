@@ -2253,23 +2253,6 @@ const GroupDetails = () => {
                               </div>
                             )}
                           </>
-                        )
-                      })()}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      </div>
 
-      {isOrganizer && <PendingRequests groupId={id} isOrganizer={isOrganizer} />}
-
-      {/* Invite Members (only organizer) */}
-      {isOrganizer && <InviteMembers groupId={id} groupName={group.name} />}
-    </div>
-  )
-}
 
 export default GroupDetails
