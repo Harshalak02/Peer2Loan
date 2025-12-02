@@ -21,51 +21,6 @@ const client = StandardCheckoutClient.getInstance(
 );
 
 // create a payment and return redirect url
-router.post("/create-payment", async (req, res) => {
-  try {
-    const { name, amount, cycleId, memberId, groupId } = req.body;
-    const merchantOrderId = randomUUID();
-    // include cycle/member info in redirect so frontend can show proper context
-    const redirectUrl = `${
-      process.env.FRONTEND_URL
-    }/payment-status/${merchantOrderId}?cycleId=${cycleId || ""}&memberId=${
-      memberId || ""
-    }&groupId=${groupId || ""}`;
-
-    const metaInfo = MetaInfo.builder()
-      .udf1(name || "")
-      .build();
-    const request = StandardCheckoutPayRequest.builder()
-      .merchantOrderId(merchantOrderId)
-      .amount(Math.round(Number(amount || 0) * 100)) // convert INR to paise
-      .redirectUrl(redirectUrl)
-      .metaInfo(metaInfo)
-      .build();
-
-    const response = await client.pay(request);
-
-    // Save pending transaction to DB, attach cycle/member if provided
-    await Payment.create({
-      name,
-      amount,
-      transactionId: merchantOrderId,
-      status: "PENDING",
-      paymentUrl: response.redirectUrl,
-      cycle: cycleId || undefined,
-      user: memberId || undefined,
-      group: groupId || undefined,
-    });
-
-    res.json({
-      success: true,
-      redirectUrl: response.redirectUrl,
-      transactionId: merchantOrderId,
-    });
-  } catch (err) {
-    console.error("PhonePe Payment Error:", err);
-    res.status(500).json({ success: false, message: "PhonePe payment failed" });
-  }
-});
 
 // get payment status by transactionId
 router.get("/status/:transactionId", async (req, res) => {

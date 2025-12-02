@@ -36,6 +36,32 @@ const cycleSchema = new mongoose.Schema({
     enum: ["upcoming", "active", "completed", "cancelled"],
     default: "upcoming",
   },
+  payments: [
+    {
+      member: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Member",
+      },
+      amount: Number,
+      paidAt: Date,
+      status: String,
+      proof: String,
+      penalty: Number,
+      verified: { type: Boolean, default: false },
+      notes: String,
+      _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
+    },
+  ],
+  payout: {
+    executed: { type: Boolean, default: false },
+    executedAt: Date,
+    proof: String,
+    notes: String,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 cycleSchema.index({ group: 1, cycleNumber: 1 }, { unique: true });
