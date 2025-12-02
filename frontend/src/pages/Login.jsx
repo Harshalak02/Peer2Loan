@@ -40,7 +40,7 @@ const Login = () => {
 
       <div className="relative w-full max-w-6xl mx-auto">
         {/* Trust badges at top */}
-        <div className="flex justify-center mb-8">
+        {/* <div className="flex justify-center mb-8">
           <div className="inline-flex items-center gap-6 bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full border border-gray-200 shadow-sm">
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <Shield className="w-4 h-4 text-emerald-500" />
@@ -52,7 +52,7 @@ const Login = () => {
               <span>50,000+ Trusted Members</span>
             </div>
           </div>
-        </div>
+        </div> */}
 
         <div className="flex flex-col lg:flex-row items-center gap-12">
           {/* Left side - Brand showcase */}
@@ -104,7 +104,7 @@ const Login = () => {
               </div>
 
               {/* Testimonial */}
-              <div className="mt-12 bg-white/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 max-w-md">
+              {/* <div className="mt-12 bg-white/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 max-w-md">
                 <p className="text-gray-700 italic mb-4">
                   "I've funded my education through Peer2Loan. The community support is incredible!"
                 </p>
@@ -115,7 +115,7 @@ const Login = () => {
                     <p className="text-sm text-gray-500">Student & Member since 2022</p>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
 
