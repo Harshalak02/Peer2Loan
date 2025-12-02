@@ -1749,6 +1749,7 @@ import {
   Search,
   Building2,
   DollarSign,
+  IndianRupee,
   ArrowRight,
   ChevronRight,
   UserCheck,
@@ -2103,12 +2104,12 @@ const Dashboard = () => {
               
               {/* Quick Stats */}
               <div className="flex flex-wrap items-center gap-3 mt-4">
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
+                {/* <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
                   {totalGroups} Groups
                 </span>
                 <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-sm font-medium rounded-full">
                   {activeCycles} Active Cycles
-                </span>
+                </span> */}
                 <span className="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full">
                   Verified Member
                 </span>
@@ -2170,7 +2171,7 @@ const Dashboard = () => {
         </div>
 
         {/* Pending Actions Notification */}
-        {pendingActions.length > 0 && (
+        {/* {pendingActions.length > 0 && (
           <div 
             onClick={() => setShowPendingActions(true)}
             className="mb-8 p-4 bg-orange-50 border border-orange-200 rounded-xl hover:bg-orange-100 transition-colors cursor-pointer"
@@ -2188,7 +2189,7 @@ const Dashboard = () => {
               <ArrowRight className="h-5 w-5 text-orange-500" />
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Groups Section */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
@@ -2244,14 +2245,15 @@ const Dashboard = () => {
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <div className="flex items-center gap-2">
                           <Users className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm text-gray-600">Members</span>
+                          <span className="text-sm text-gray-600">Group Size</span>
                         </div>
-                        <span className="font-semibold text-gray-900">{member.group?.totalMembers || 0}</span>
+                        <span className="font-semibold text-gray-900">{member.group?.groupSize || 0}</span>
                       </div>
                       
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <div className="flex items-center gap-2">
-                          <DollarSign className="h-4 w-4 text-gray-400" />
+                          
+<IndianRupee className="h-4 w-4 text-gray-400" />
                           <span className="text-sm text-gray-600">Per Cycle</span>
                         </div>
                         <span className="font-semibold text-gray-900">₹{member.group?.monthlyContribution}</span>
@@ -2369,7 +2371,9 @@ const Dashboard = () => {
                           onClick={() => navigate(`/groups/${action.groupId}`)}
                           className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
                         >
-                          <DollarSign className="h-4 w-4" />
+                          {/* <DollarSign className="h-4 w-4" /> */}
+
+<IndianRupee className="h-4 w-4 " />
                           Proceed to Pay
                         </button>
                       )}
