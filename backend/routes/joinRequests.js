@@ -164,81 +164,6 @@ router.get('/group/:groupId/pending', auth, async (req, res) => {
   }
 });
 
-// Organizer: Approve join request
-// router.post('/:requestId/approve', auth, async (req, res) => {
-//   try {
-//     const joinRequest = await JoinRequest.findById(req.params.requestId)
-//       .populate('group')
-//       .populate('user');
-
-//     if (!joinRequest) {
-//       return res.status(404).json({
-//         success: false,
-//         message: 'Join request not found'
-//       });
-//     }
-
-//     // Verify user is organizer of this group
-//     const organizer = await Member.findOne({
-//       group: joinRequest.group._id,
-//       user: req.user.id,
-//       role: 'organizer'
-//     });
-
-//     if (!organizer) {
-//       return res.status(403).json({
-//         success: false,
-//         message: 'Only the organizer can approve requests'
-//       });
-//     }
-
-//     // Check if group is full
-//     const currentMembers = await Member.countDocuments({
-//       group: joinRequest.group._id,
-//       status: 'active'
-//     });
-
-//     if (currentMembers >= joinRequest.group.groupSize) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'Group is already full'
-//       });
-//     }
-
-//     // Create member
-//     const member = new Member({
-//       user: joinRequest.user._id,
-//       group: joinRequest.group._id,
-//       role: 'member',
-//       status: 'active',
-//       turnOrder: currentMembers + 1
-//     });
-
-//     await member.save();
-
-//     // Update join request
-//     joinRequest.status = 'approved';
-//     joinRequest.approvedBy = req.user.id;
-//     joinRequest.approvedAt = new Date();
-//     await joinRequest.save();
-
-//     res.json({
-//       success: true,
-//       message: 'Join request approved',
-//       data: {
-//         joinRequest,
-//         member
-//       }
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       success: false,
-//       message: error.message
-//     });
-//   }
-// });
-// Organizer: Approve join request
-// Organizer: Approve join request
 router.post('/:requestId/approve', auth, async (req, res) => {
   try {
     const joinRequest = await JoinRequest.findById(req.params.requestId)
@@ -318,49 +243,12 @@ router.post('/:requestId/approve', auth, async (req, res) => {
   }
 });
 
-
-
 // Organizer: Reject join request
 router.post('/:requestId/reject', auth, async (req, res) => {
-  try {
-    const { reason } = req.body;
-    const joinRequest = await JoinRequest.findById(req.params.requestId)
-      .populate('group');
-
-    if (!joinRequest) {
-      return res.status(404).json({
-        success: false,
-        message: 'Join request not found'
-      });
-    }
-
-    // Verify user is organizer of this group
-    const organizer = await Member.findOne({
-      group: joinRequest.group._id,
-      user: req.user.id,
-      role: 'organizer'
-    });
-
-    if (!organizer) {
-      return res.status(403).json({
-        success: false,
-        message: 'Only the organizer can reject requests'
-      });
-    }
-
-    // Update join request
-    joinRequest.status = 'rejected';
-    joinRequest.approvedBy = req.user.id;
-    joinRequest.rejectionReason = reason || 'Request rejected by organizer';
-    joinRequest.approvedAt = new Date();
-    await joinRequest.save();
-
-    res.json({
-      success: true,
-      message: 'Join request rejected',
-      data: joinRequest
-    });
-  } catch (error) {
+ try{
+  //need to fixed
+ }
+  catch (error) {
     res.status(500).json({
       success: false,
       message: error.message
