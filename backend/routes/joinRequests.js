@@ -1,9 +1,9 @@
 const express = require('express');
-const JoinRequest = require('../../models/JoinRequest');
-const Group = require('../../models/Group');
-const Member = require('../../models/Member');
-const User = require('../../models/User');
-const auth = require('../../middleware/auth');
+const JoinRequest = require('../models/JoinRequest');
+const Group = require('../models/Group');
+const Member = require('../models/Member');
+const User = require('../models/User');
+const auth = require('../middleware/auth');
 const router = express.Router();
 
 // User submits join request with access code
