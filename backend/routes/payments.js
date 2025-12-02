@@ -129,12 +129,10 @@ router.post("/auto-verify", auth, async (req, res) => {
       group: cycle.group,
     });
     if (!member) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "You are not a member of this group",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "You are not a member of this group",
+      });
     }
 
     // Check if already paid entry exists
