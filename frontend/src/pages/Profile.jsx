@@ -199,7 +199,7 @@ const Profile = () => {
           </div>
 
           {/* Account Statistics - Using existing mock data */}
-          <div className="p-8 border-t border-gray-100">
+          {/* <div className="p-8 border-t border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900 mb-6">Account Statistics</h3>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -243,7 +243,7 @@ const Profile = () => {
                 <div className="text-sm text-gray-600 mt-1">Received</div>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Security Note */}
           <div className="p-8 border-t border-gray-100 bg-gradient-to-r from-blue-50/50 to-emerald-50/50">
