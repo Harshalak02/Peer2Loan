@@ -50,12 +50,12 @@ const Navbar = () => {
                 <span>Create Group</span>
               </Link>
 
-              <Link
+              {/* <Link
                 to="/groups"
                 className="text-gray-600 hover:text-blue-600 transition-colors"
               >
                 My Groups
-              </Link>
+              </Link> */}
 
               <Link
                 to="/profile"
