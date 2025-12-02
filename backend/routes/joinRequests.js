@@ -165,6 +165,80 @@ router.get('/group/:groupId/pending', auth, async (req, res) => {
 });
 
 // Organizer: Approve join request
+// router.post('/:requestId/approve', auth, async (req, res) => {
+//   try {
+//     const joinRequest = await JoinRequest.findById(req.params.requestId)
+//       .populate('group')
+//       .populate('user');
+
+//     if (!joinRequest) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Join request not found'
+//       });
+//     }
+
+//     // Verify user is organizer of this group
+//     const organizer = await Member.findOne({
+//       group: joinRequest.group._id,
+//       user: req.user.id,
+//       role: 'organizer'
+//     });
+
+//     if (!organizer) {
+//       return res.status(403).json({
+//         success: false,
+//         message: 'Only the organizer can approve requests'
+//       });
+//     }
+
+//     // Check if group is full
+//     const currentMembers = await Member.countDocuments({
+//       group: joinRequest.group._id,
+//       status: 'active'
+//     });
+
+//     if (currentMembers >= joinRequest.group.groupSize) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Group is already full'
+//       });
+//     }
+
+//     // Create member
+//     const member = new Member({
+//       user: joinRequest.user._id,
+//       group: joinRequest.group._id,
+//       role: 'member',
+//       status: 'active',
+//       turnOrder: currentMembers + 1
+//     });
+
+//     await member.save();
+
+//     // Update join request
+//     joinRequest.status = 'approved';
+//     joinRequest.approvedBy = req.user.id;
+//     joinRequest.approvedAt = new Date();
+//     await joinRequest.save();
+
+//     res.json({
+//       success: true,
+//       message: 'Join request approved',
+//       data: {
+//         joinRequest,
+//         member
+//       }
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message
+//     });
+//   }
+// });
+// Organizer: Approve join request
+// Organizer: Approve join request
 router.post('/:requestId/approve', auth, async (req, res) => {
   try {
     const joinRequest = await JoinRequest.findById(req.params.requestId)
@@ -172,13 +246,10 @@ router.post('/:requestId/approve', auth, async (req, res) => {
       .populate('user');
 
     if (!joinRequest) {
-      return res.status(404).json({
-        success: false,
-        message: 'Join request not found'
-      });
+      return res.status(404).json({ success: false, message: 'Join request not found' });
     }
 
-    // Verify user is organizer of this group
+    // Verify organizer
     const organizer = await Member.findOne({
       group: joinRequest.group._id,
       user: req.user.id,
@@ -186,34 +257,46 @@ router.post('/:requestId/approve', auth, async (req, res) => {
     });
 
     if (!organizer) {
-      return res.status(403).json({
-        success: false,
-        message: 'Only the organizer can approve requests'
-      });
+      return res.status(403).json({ success: false, message: 'Only organizer can approve requests' });
     }
 
-    // Check if group is full
-    const currentMembers = await Member.countDocuments({
-      group: joinRequest.group._id,
+    const group = joinRequest.group;
+
+    // Count current members
+    const currentMemberCount = await Member.countDocuments({
+      group: group._id,
       status: 'active'
     });
 
-    if (currentMembers >= joinRequest.group.groupSize) {
-      return res.status(400).json({
-        success: false,
-        message: 'Group is already full'
-      });
+    if (currentMemberCount >= group.groupSize) {
+      return res.status(400).json({ success: false, message: 'Group is already full' });
     }
 
-    // Create member
+    // ---------------- RANDOM TURN ASSIGNMENT ------------------
+    if (!group.takenPositions) group.takenPositions = [];
+
+    const allPositions = Array.from({ length: group.groupSize }, (_, i) => i + 1);
+    const availablePositions = allPositions.filter(pos => !group.takenPositions.includes(pos));
+
+    if (availablePositions.length === 0) {
+      return res.status(400).json({ success: false, message: 'No available positions left' });
+    }
+
+    const randomIndex = Math.floor(Math.random() * availablePositions.length);
+    const assignedTurn = availablePositions[randomIndex];
+
+    // Save taken turn
+    group.takenPositions.push(assignedTurn);
+    await group.save();
+
+    // Create Member with assigned turnOrder
     const member = new Member({
       user: joinRequest.user._id,
-      group: joinRequest.group._id,
+      group: group._id,
       role: 'member',
       status: 'active',
-      turnOrder: currentMembers + 1
+      turnOrder: assignedTurn
     });
-
     await member.save();
 
     // Update join request
@@ -222,21 +305,20 @@ router.post('/:requestId/approve', auth, async (req, res) => {
     joinRequest.approvedAt = new Date();
     await joinRequest.save();
 
-    res.json({
+    return res.json({
       success: true,
-      message: 'Join request approved',
-      data: {
-        joinRequest,
-        member
-      }
+      message: 'Join request approved successfully',
+      assignedTurn,
+      member
     });
+
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.log(error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 });
+
+
 
 // Organizer: Reject join request
 router.post('/:requestId/reject', auth, async (req, res) => {

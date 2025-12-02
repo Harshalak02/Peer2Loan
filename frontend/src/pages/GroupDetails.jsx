@@ -1929,7 +1929,7 @@ const GroupDetails = () => {
         </div>
       </div>
 
-      {/* Members Section */}
+      {/* Members Section
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-800">Members</h2>
@@ -1963,7 +1963,58 @@ const GroupDetails = () => {
             ))}
           </div>
         </div>
-      </div>
+      </div> */}
+
+      {/* Members Section */}
+<div className="bg-white rounded-xl shadow-sm border border-gray-200">
+  <div className="p-6 border-b border-gray-200">
+    <h2 className="text-xl font-semibold text-gray-800">Members</h2>
+  </div>
+
+  <div className="p-6">
+    <div className="space-y-4">
+
+      {members.map((member) => (
+        <div
+          key={member._id}
+          className="flex items-center justify-between p-3 border border-gray-200 rounded-lg"
+        >
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <span className="text-blue-600 font-semibold text-sm">
+                {member.user?.name?.charAt(0) || 'U'}
+              </span>
+            </div>
+
+            <div>
+              <p className="font-medium text-gray-800">{member.user?.name}</p>
+              <p className="text-sm text-gray-500">{member.user?.email}</p>
+            </div>
+          </div>
+
+          <div className="text-right">
+            <span
+              className={`px-2 py-1 text-xs rounded-full ${
+                member.role === 'organizer'
+                  ? 'bg-purple-100 text-purple-800'
+                  : 'bg-gray-100 text-gray-800'
+              }`}
+            >
+              {member.role}
+            </span>
+
+            {/* ALWAYS SHOW TURN ORDER */}
+            <p className="text-sm text-gray-500 mt-1">
+              Turn: {member.turnOrder ?? '—'}
+            </p>
+          </div>
+        </div>
+      ))}
+
+    </div>
+  </div>
+</div>
+      
 
       {/* Cycles Section */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
