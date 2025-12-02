@@ -2315,7 +2315,7 @@ const Dashboard = () => {
         </div>
 
         {/* Pending Actions Modal */}
-       
+        {showPendingActions && pendingActions.length > 0 && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
               <div className="sticky top-0 bg-white border-b border-gray-200 p-6">
@@ -2365,7 +2365,58 @@ const Dashboard = () => {
                       </div>
                     </div>
 
-                  
+                    <div className="mt-4 flex gap-3">
+                      {action.type === 'payment' && (
+                        <button 
+                          onClick={() => navigate(`/groups/${action.groupId}`)}
+                          className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                        >
+                          {/* <DollarSign className="h-4 w-4" /> */}
+
+<IndianRupee className="h-4 w-4 " />
+                          Proceed to Pay
+                        </button>
+                      )}
+                      {action.type === 'join_request' && (
+                        <>
+                          <button 
+                            onClick={() => approveMutation.mutate(action.requestId)}
+                            disabled={approveMutation.isLoading}
+                            className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+                          >
+                            <UserCheck className="h-4 w-4" />
+                            {approveMutation.isLoading ? 'Approving...' : 'Approve'}
+                          </button>
+                          <button 
+                            onClick={() => rejectMutation.mutate(action.requestId)}
+                            disabled={rejectMutation.isLoading}
+                            className="px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 disabled:opacity-50 transition-colors"
+                          >
+                            {rejectMutation.isLoading ? 'Rejecting...' : 'Reject'}
+                          </button>
+                        </>
+                      )}
+                      {action.type === 'verify_payment' && (
+                        <button 
+                          onClick={() => verifyPaymentMutation.mutate({
+                            cycleId: action.cycleId, 
+                            paymentId: action.paymentId
+                          })}
+                          disabled={verifyPaymentMutation.isLoading}
+                          className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+                          >
+                          <FileCheck className="h-4 w-4" />
+                          {verifyPaymentMutation.isLoading ? 'Verifying...' : 'Verify Payment'}
+                        </button>
+                      )}
+                      {action.type === 'payment_pending' && (
+                        <span className="text-sm text-blue-600 flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          Awaiting verification
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>

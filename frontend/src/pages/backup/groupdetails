@@ -1722,7 +1722,32 @@ const GroupDetails = () => {
   let getLateFeeInfo = () => ({ base: 0, lateFee: 0, total: 0 })
 
   // Start PhonePe payment flow for this cycle (frontend triggers backend create-payment)
+  const handlePhonePay = async (cycleId) => {
+    try {
+      // We will compute the correct late-fee-adjusted amount below
+      // after we know group + cycles + currentUser
+      const cycle = cycles.find((c) => c._id === cycleId)
+      const { total } = getLateFeeInfo(cycle) // includes late fee if applicable
 
+      const amount = total || group.monthlyContribution || 0
+      const name = currentUser?.name || currentUser?.membership?.user?.name || ''
+      console.log('📤 Initiating PhonePe payment with:', { name, amount, cycleId, groupId: id })
+
+      const resp = await phonepeService.createPayment({ name, amount, cycleId, groupId: id })
+      console.log('✅ Full PhonePe API Response:', resp.data)
+      alert(`Redirect URL received: ${resp.data.redirectUrl}`)
+      if (resp.data?.success && resp.data.redirectUrl) {
+        console.log('➡️ Redirecting to PhonePe URL:', resp.data.redirectUrl)
+        window.location.href = resp.data.redirectUrl
+      } else {
+        console.warn('⚠️ Payment initiation failed. Response:', resp.data)
+        alert('Failed to initiate payment')
+      }
+    } catch (err) {
+      console.error('❌ PhonePe create payment error', err?.response?.data || err.message)
+      alert('Error initiating payment')
+    }
+  }
 
   if (isLoading) {
     return (
