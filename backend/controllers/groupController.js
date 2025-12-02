@@ -66,6 +66,71 @@ const getUserGroups = async (req, res) => {
   }
 };
 
+// const getGroupDetails = async (req, res) => {
+//   try {
+//     const group = await Group.findById(req.params.id)
+//       .populate('organizer', 'name email');
+      
+//     if (!group) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Group not found'
+//       });
+//     }
+
+//     // Find the requesting user's membership
+//     const membership = await Member.findOne({
+//       group: req.params.id,
+//       user: req.user.id
+//     });
+
+//     if (!membership) {
+//       return res.status(403).json({
+//         success: false,
+//         message: 'You are not a member of this group'
+//       });
+//     }
+
+//     // Get all members of the group
+//     const members = await Member.find({ group: req.params.id })
+//       .populate('user', 'name email phone');
+      
+//     // Get all cycles of the group
+//     const cycles = await Cycle.find({ group: req.params.id })
+//       .populate('payoutRecipient')
+//       .sort({ cycleNumber: 1 });
+
+//     const isOrganizer = membership.role === 'organizer';
+
+//     // Prepare group data
+//     const groupData = group.toObject();
+    
+//     // Only include access code if user is the organizer
+//     if (!isOrganizer) {
+//       delete groupData.accessCode;
+//     }
+
+//     res.json({
+//       success: true,
+//       data: {
+//         group: groupData,
+//         members,
+//         cycles,
+//         currentUser: {
+//           isOrganizer,
+//           membership: membership.toObject()
+//         }
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Error fetching group details:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Failed to fetch group details'
+//     });
+//   }
+// };
+
 const getGroupDetails = async (req, res) => {
   try {
     const group = await Group.findById(req.params.id)
@@ -91,10 +156,11 @@ const getGroupDetails = async (req, res) => {
       });
     }
 
-    // Get all members of the group
+    // GET ALL MEMBERS SORTED BY TURN ORDER
     const members = await Member.find({ group: req.params.id })
-      .populate('user', 'name email phone');
-      
+      .populate('user', 'name email phone')
+      .sort({ turnOrder: 1 });   //  <-- IMPORTANT FIX
+
     // Get all cycles of the group
     const cycles = await Cycle.find({ group: req.params.id })
       .populate('payoutRecipient')
@@ -130,6 +196,7 @@ const getGroupDetails = async (req, res) => {
     });
   }
 };
+
 
 const startGroup = async (req, res) => {
   try {
