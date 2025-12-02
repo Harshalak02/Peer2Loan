@@ -353,20 +353,19 @@ const CreateGroup = () => {
   const { register, handleSubmit, formState: { errors }, watch } = useForm()
 
   const createGroupMutation = useMutation({
-    mutationFn: (groupData) => groupService.createGroup(groupData),
-    onSuccess: (data) => {
-      console.log('Group creation response:', data)
-      console.log('Group ID:', data.data._id)
-      toast.success('Group created successfully! 🎉')
-      navigate(`/groups/${data.data._id}`)
-    },
-    onError: (error) => {
-      console.error('Group creation error:', error)
-      console.error('Error response:', error.response)
-      toast.error(error.response?.data?.message || 'Failed to create group')
-    }
-  })
-
+  mutationFn: (groupData) => groupService.createGroup(groupData),
+  onSuccess: (data) => {
+    console.log('Group creation response:', data)
+    console.log('Group ID:', data.data._id)
+    toast.success('Group created successfully!')
+    navigate('/')
+  },
+  onError: (error) => {
+    console.error('Group creation error:', error)
+    console.error('Error response:', error.response)
+    toast.error(error.response?.data?.message || 'Failed to create group')
+  }
+})
   const onSubmit = (data) => {
     const groupData = {
       ...data,
