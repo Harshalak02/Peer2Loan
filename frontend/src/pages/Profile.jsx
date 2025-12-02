@@ -254,7 +254,7 @@ const Profile = () => {
               <div>
                 <p className="text-sm font-medium text-gray-900">Your information is secure</p>
                 <p className="text-xs text-gray-500 mt-1">
-                  All data is encrypted and protected with bank-level security
+                  
                 </p>
               </div>
             </div>
