@@ -352,20 +352,37 @@ const CreateGroup = () => {
   const navigate = useNavigate()
   const { register, handleSubmit, formState: { errors }, watch } = useForm()
 
-  const createGroupMutation = useMutation({
-  mutationFn: (groupData) => groupService.createGroup(groupData),
-  onSuccess: (data) => {
-    console.log('Group creation response:', data)
-    console.log('Group ID:', data.data._id)
-    toast.success('Group created successfully!')
-    navigate('/')
-  },
-  onError: (error) => {
-    console.error('Group creation error:', error)
-    console.error('Error response:', error.response)
-    toast.error(error.response?.data?.message || 'Failed to create group')
+  // Watch groupSize so we can derive duration options
+  const groupSize = watch('groupSize')
+
+  // Duration options = positive multiples of groupSize
+  const getDurationOptions = () => {
+    const size = Number(groupSize)
+    if (!size || size <= 0) return []
+
+    const options = []
+    // You can adjust the upper limit (here max 120 months)
+    for (let m = size; m <= 120; m += size) {
+      options.push(m)
+    }
+    return options
   }
-})
+
+  const createGroupMutation = useMutation({
+    mutationFn: (groupData) => groupService.createGroup(groupData),
+    onSuccess: (data) => {
+      console.log('Group creation response:', data)
+      console.log('Group ID:', data.data._id)
+      toast.success('Group created successfully!')
+      navigate('/')
+    },
+    onError: (error) => {
+      console.error('Group creation error:', error)
+      console.error('Error response:', error.response)
+      toast.error(error.response?.data?.message || 'Failed to create group')
+    }
+  })
+
   const onSubmit = (data) => {
     const groupData = {
       ...data,
@@ -547,27 +564,33 @@ const CreateGroup = () => {
                       )}
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="flex items-center text-sm font-medium text-gray-700">
-                        <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                        Duration (months) *
-                      </label>
-                      <input
-                        type="number"
-                        {...register('duration', {
-                          required: 'Duration is required',
-                          min: { value: 1, message: 'Minimum 1 month' }
-                        })}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                        placeholder="12"
-                      />
-                      {errors.duration && (
-                        <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                          <AlertCircle className="h-3 w-3" />
-                          {errors.duration.message}
-                        </p>
-                      )}
-                    </div>
+              {/* Duration now depends on groupSize (multiples only) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Duration (months) *
+                </label>
+                <select
+                  {...register('duration', {
+                    required: 'Duration is required'
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={!groupSize}
+                >
+                  <option value="">
+                    {groupSize ? 'Select duration' : 'Enter group size first'}
+                  </option>
+                  {getDurationOptions().map((d) => (
+                    <option key={d} value={d}>
+                      {d} months
+                    </option>
+                  ))}
+                </select>
+                {errors.duration && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.duration.message}
+                  </p>
+                )}
+              </div>
 
                     <div className="space-y-2">
                       <label className="flex items-center text-sm font-medium text-gray-700">

@@ -88,6 +88,11 @@ const groupSchema = new mongoose.Schema({
     autoReminders: { type: Boolean, default: true },
     requirePaymentProof: { type: Boolean, default: true }
   },
+  takenPositions: {
+  type: [Number],
+  default: []
+},
+
   createdAt: {
     type: Date,
     default: Date.now
