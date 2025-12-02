@@ -27,7 +27,8 @@
     "passport-google-oauth20": "^2.0.0",
     "passport-local": "^1.0.0",
     "pg-sdk-node": "^2.0.2",
-    "razorpay": "^2.9.2"
+    "razorpay": "^2.9.2",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "jest": "^29.6.2",

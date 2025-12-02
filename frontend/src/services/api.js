@@ -63,6 +63,7 @@ export const groupService = {
 export const cycleService = {
   getGroupCycles: (groupId) => api.get(`/cycles/group/${groupId}`),
   getCurrentCycle: (groupId) => api.get(`/cycles/group/${groupId}/current`),
+  getTurnStatus: () => api.get(`/cycles/turn-status`),
 };
 
 export const paymentService = {
@@ -103,5 +104,13 @@ export const joinRequestService = {
     api.post(`/join-requests/approve/${invitationId}`),
   rejectRequest: (invitationId) =>
     api.post(`/join-requests/reject/${invitationId}`),
+};
+
+export const notificationService = {
+  getNotifications: () => api.get("/notifications"),
+  markAsRead: (notificationId) =>
+    api.patch(`/notifications/${notificationId}/read`),
+  markAllAsRead: () => api.patch("/notifications/mark-all-read"),
+  getUnreadCount: () => api.get("/notifications/unread-count"),
 };
 export default api;

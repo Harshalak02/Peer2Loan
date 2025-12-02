@@ -107,9 +107,9 @@ const GroupReport = () => {
       }
     })
 
-    stats.totalContributions = group.monthlyContribution * members.length * cycles.length
+    stats.totalContributions = group.monthlyContribution * (members.length - 1) * cycles.length
     stats.pendingAmount = stats.totalContributions - stats.totalCollected
-    stats.pendingPayments = (members.length * cycles.length) - stats.onTimePayments - stats.latePayments
+    stats.pendingPayments = ((members.length - 1) * cycles.length) - stats.onTimePayments - stats.latePayments
 
     return stats
   }
@@ -418,6 +418,9 @@ const GroupReport = () => {
                       <h3 className="text-xl font-bold text-gray-800">
                         Cycle {cycle.cycleNumber}
                       </h3>
+                      <p className="text-sm text-blue-600 font-medium mt-1">
+                        Recipient: {members.find(m => m.turnOrder === cycle.cycleNumber)?.user?.name || 'Unknown'}
+                      </p>
                       <p className="text-gray-600 text-sm mt-1">
                         {new Date(cycle.startDate).toLocaleDateString('en-IN')} - {new Date(cycle.endDate).toLocaleDateString('en-IN')}
                       </p>
@@ -449,7 +452,7 @@ const GroupReport = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {members.map((member) => {
+                        {members.filter(member => member.turnOrder !== cycle.cycleNumber).map((member) => {
                           const paymentStatus = getPaymentStatus(cycle, member)
                           const payment = Array.isArray(cycle.payments) 
                             ? cycle.payments.find(p => {

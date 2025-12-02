@@ -1,36 +1,39 @@
-const express = require('express');
-const JoinRequest = require('../models/JoinRequest');
-const Group = require('../models/Group');
-const Member = require('../models/Member');
-const User = require('../models/User');
-const auth = require('../middleware/auth');
+const express = require("express");
+const JoinRequest = require("../models/JoinRequest");
+const Group = require("../models/Group");
+const Member = require("../models/Member");
+const User = require("../models/User");
+const auth = require("../middleware/auth");
 const router = express.Router();
 
 // User submits join request with access code
-router.post('/request', auth, async (req, res) => {
+router.post("/request", auth, async (req, res) => {
   try {
     const { accessCode } = req.body;
 
     // Find group with this access code
-    const group = await Group.findOne({ accessCode }).populate('organizer', 'name email');
-    
+    const group = await Group.findOne({ accessCode }).populate(
+      "organizer",
+      "name email"
+    );
+
     if (!group) {
       return res.status(404).json({
         success: false,
-        message: 'Invalid access code'
+        message: "Invalid access code",
       });
     }
 
     // Check if user is already a member
     const existingMember = await Member.findOne({
       group: group._id,
-      user: req.user.id
+      user: req.user.id,
     });
 
     if (existingMember) {
       return res.status(400).json({
         success: false,
-        message: 'You are already a member of this group'
+        message: "You are already a member of this group",
       });
     }
 
@@ -38,13 +41,13 @@ router.post('/request', auth, async (req, res) => {
     const existingRequest = await JoinRequest.findOne({
       group: group._id,
       user: req.user.id,
-      status: 'pending'
+      status: "pending",
     });
 
     if (existingRequest) {
       return res.status(400).json({
         success: false,
-        message: 'You already have a pending request for this group'
+        message: "You already have a pending request for this group",
       });
     }
 
@@ -53,14 +56,14 @@ router.post('/request', auth, async (req, res) => {
       group: group._id,
       user: req.user.id,
       accessCode: accessCode,
-      status: 'pending'
+      status: "pending",
     });
 
     await joinRequest.save();
 
     res.json({
       success: true,
-      message: 'Join request submitted successfully',
+      message: "Join request submitted successfully",
       data: {
         group: {
           _id: group._id,
@@ -69,38 +72,40 @@ router.post('/request', auth, async (req, res) => {
           monthlyContribution: group.monthlyContribution,
           groupSize: group.groupSize,
           duration: group.duration,
-          organizer: group.organizer
+          organizer: group.organizer,
         },
-        status: 'pending'
-      }
+        status: "pending",
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 });
 
 // Get group details before joining (accessible with access code)
-router.post('/preview', async (req, res) => {
+router.post("/preview", async (req, res) => {
   try {
     const { accessCode } = req.body;
 
-    const group = await Group.findOne({ accessCode })
-      .populate('organizer', 'name email');
-    
+    const group = await Group.findOne({ accessCode }).populate(
+      "organizer",
+      "name email"
+    );
+
     if (!group) {
       return res.status(404).json({
         success: false,
-        message: 'Invalid access code'
+        message: "Invalid access code",
       });
     }
 
     // Get current member count
-    const memberCount = await Member.countDocuments({ 
+    const memberCount = await Member.countDocuments({
       group: group._id,
-      status: 'active'
+      status: "active",
     });
 
     res.json({
@@ -118,48 +123,48 @@ router.post('/preview', async (req, res) => {
           rules: {
             paymentWindow: group.paymentWindow,
             penaltyRules: group.penaltyRules,
-            turnOrderPolicy: group.turnOrderPolicy
-          }
-        }
-      }
+            turnOrderPolicy: group.turnOrderPolicy,
+          },
+        },
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 });
 // Organizer: Get pending join requests for their group
-router.get('/group/:groupId/pending', auth, async (req, res) => {
+router.get("/group/:groupId/pending", auth, async (req, res) => {
   try {
     // Verify user is organizer of this group
     const organizer = await Member.findOne({
       group: req.params.groupId,
       user: req.user.id,
-      role: 'organizer'
+      role: "organizer",
     });
 
     if (!organizer) {
       return res.status(403).json({
         success: false,
-        message: 'You are not the organizer of this group'
+        message: "You are not the organizer of this group",
       });
     }
 
     const requests = await JoinRequest.find({
       group: req.params.groupId,
-      status: 'pending'
-    }).populate('user', 'name email');
+      status: "pending",
+    }).populate("user", "name email");
 
     res.json({
       success: true,
-      data: requests
+      data: requests,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -239,25 +244,32 @@ router.get('/group/:groupId/pending', auth, async (req, res) => {
 // });
 // Organizer: Approve join request
 // Organizer: Approve join request
-router.post('/:requestId/approve', auth, async (req, res) => {
+router.post("/:requestId/approve", auth, async (req, res) => {
   try {
     const joinRequest = await JoinRequest.findById(req.params.requestId)
-      .populate('group')
-      .populate('user');
+      .populate("group")
+      .populate("user");
 
     if (!joinRequest) {
-      return res.status(404).json({ success: false, message: 'Join request not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Join request not found" });
     }
 
     // Verify organizer
     const organizer = await Member.findOne({
       group: joinRequest.group._id,
       user: req.user.id,
-      role: 'organizer'
+      role: "organizer",
     });
 
     if (!organizer) {
-      return res.status(403).json({ success: false, message: 'Only organizer can approve requests' });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Only organizer can approve requests",
+        });
     }
 
     const group = joinRequest.group;
@@ -265,25 +277,43 @@ router.post('/:requestId/approve', auth, async (req, res) => {
     // Count current members
     const currentMemberCount = await Member.countDocuments({
       group: group._id,
-      status: 'active'
+      status: "active",
     });
 
     if (currentMemberCount >= group.groupSize) {
-      return res.status(400).json({ success: false, message: 'Group is already full' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Group is already full" });
     }
 
-    // ---------------- RANDOM TURN ASSIGNMENT ------------------
+    // ---------------- TURN ASSIGNMENT LOGIC ------------------
     if (!group.takenPositions) group.takenPositions = [];
 
-    const allPositions = Array.from({ length: group.groupSize }, (_, i) => i + 1);
-    const availablePositions = allPositions.filter(pos => !group.takenPositions.includes(pos));
+    const allPositions = Array.from(
+      { length: group.groupSize },
+      (_, i) => i + 1
+    );
+    const availablePositions = allPositions.filter(
+      (pos) => !group.takenPositions.includes(pos)
+    );
 
     if (availablePositions.length === 0) {
-      return res.status(400).json({ success: false, message: 'No available positions left' });
+      return res
+        .status(400)
+        .json({ success: false, message: "No available positions left" });
     }
 
-    const randomIndex = Math.floor(Math.random() * availablePositions.length);
-    const assignedTurn = availablePositions[randomIndex];
+    let assignedTurn;
+
+    // Determine turn assignment based on policy
+    if (group.turnOrderPolicy === "random") {
+      // Random assignment from available positions
+      const randomIndex = Math.floor(Math.random() * availablePositions.length);
+      assignedTurn = availablePositions[randomIndex];
+    } else {
+      // Fixed order: assign the lowest available position
+      assignedTurn = Math.min(...availablePositions);
+    }
 
     // Save taken turn
     group.takenPositions.push(assignedTurn);
@@ -293,44 +323,42 @@ router.post('/:requestId/approve', auth, async (req, res) => {
     const member = new Member({
       user: joinRequest.user._id,
       group: group._id,
-      role: 'member',
-      status: 'active',
-      turnOrder: assignedTurn
+      role: "member",
+      status: "active",
+      turnOrder: assignedTurn,
     });
     await member.save();
 
     // Update join request
-    joinRequest.status = 'approved';
+    joinRequest.status = "approved";
     joinRequest.approvedBy = req.user.id;
     joinRequest.approvedAt = new Date();
     await joinRequest.save();
 
     return res.json({
       success: true,
-      message: 'Join request approved successfully',
+      message: "Join request approved successfully",
       assignedTurn,
-      member
+      member,
     });
-
   } catch (error) {
     console.log(error);
     return res.status(500).json({ success: false, message: error.message });
   }
 });
 
-
-
 // Organizer: Reject join request
-router.post('/:requestId/reject', auth, async (req, res) => {
+router.post("/:requestId/reject", auth, async (req, res) => {
   try {
     const { reason } = req.body;
-    const joinRequest = await JoinRequest.findById(req.params.requestId)
-      .populate('group');
+    const joinRequest = await JoinRequest.findById(
+      req.params.requestId
+    ).populate("group");
 
     if (!joinRequest) {
       return res.status(404).json({
         success: false,
-        message: 'Join request not found'
+        message: "Join request not found",
       });
     }
 
@@ -338,59 +366,59 @@ router.post('/:requestId/reject', auth, async (req, res) => {
     const organizer = await Member.findOne({
       group: joinRequest.group._id,
       user: req.user.id,
-      role: 'organizer'
+      role: "organizer",
     });
 
     if (!organizer) {
       return res.status(403).json({
         success: false,
-        message: 'Only the organizer can reject requests'
+        message: "Only the organizer can reject requests",
       });
     }
 
     // Update join request
-    joinRequest.status = 'rejected';
+    joinRequest.status = "rejected";
     joinRequest.approvedBy = req.user.id;
-    joinRequest.rejectionReason = reason || 'Request rejected by organizer';
+    joinRequest.rejectionReason = reason || "Request rejected by organizer";
     joinRequest.approvedAt = new Date();
     await joinRequest.save();
 
     res.json({
       success: true,
-      message: 'Join request rejected',
-      data: joinRequest
+      message: "Join request rejected",
+      data: joinRequest,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 });
 
 // User: Get their join request status for a group
-router.get('/status/:groupId', auth, async (req, res) => {
+router.get("/status/:groupId", auth, async (req, res) => {
   try {
     const joinRequest = await JoinRequest.findOne({
       group: req.params.groupId,
-      user: req.user.id
+      user: req.user.id,
     });
 
     if (!joinRequest) {
       return res.json({
         success: true,
-        data: null // No request found
+        data: null, // No request found
       });
     }
 
     res.json({
       success: true,
-      data: joinRequest
+      data: joinRequest,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 });

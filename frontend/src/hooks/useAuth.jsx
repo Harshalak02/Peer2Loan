@@ -1,6 +1,7 @@
 // src/hooks/useAuth.jsx
 import { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/api'; // Make sure authService has login, register, verifyToken
+import webSocketService from '../services/websocket';
 
 // 1. Create Context
 const AuthContext = createContext();
@@ -32,6 +33,8 @@ export const AuthProvider = ({ children }) => {
         const res = await authService.verifyToken();
         if (res.data.success && res.data.user) {
           setUser(res.data.user);
+          // Connect to WebSocket when user is authenticated
+          webSocketService.connect();
         } else {
           localStorage.removeItem('token');
           setUser(null);
@@ -55,6 +58,8 @@ export const AuthProvider = ({ children }) => {
       if (res.data.success && res.data.token) {
         localStorage.setItem('token', res.data.token);
         setUser(res.data.user);
+        // Connect to WebSocket on successful login
+        webSocketService.connect();
         return { success: true, user: res.data.user };
       } else {
         throw new Error(res.data.message || 'Login failed');
@@ -86,6 +91,8 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
+    // Disconnect WebSocket on logout
+    webSocketService.disconnect();
   };
 
   // Context value
