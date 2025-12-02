@@ -8,6 +8,83 @@ const router = express.Router();
 
 // Send invitation
 // Join group with access code
+router.post("/join", auth, async (req, res) => {
+  try {
+    const { accessCode } = req.body;
+
+    const invitation = await Invitation.findOne({
+      accessCode,
+      status: "pending",
+      expiresAt: { $gt: new Date() },
+    }).populate("group");
+
+    if (!invitation) {
+      return res.status(404).json({
+        success: false,
+        message: "Invalid or expired access code",
+      });
+    }
+
+    // Check if group is full
+    const currentMembers = await Member.countDocuments({
+      group: invitation.group._id,
+      status: "active",
+    });
+
+    if (currentMembers >= invitation.group.groupSize) {
+      return res.status(400).json({
+        success: false,
+        message: "Group is already full",
+      });
+    }
+
+    // Check if user is already a member
+    const existingMember = await Member.findOne({
+      group: invitation.group._id,
+      user: req.user.id,
+    });
+
+    if (existingMember) {
+      return res.status(400).json({
+        success: false,
+        message: "You are already a member of this group",
+      });
+    }
+
+    // Create member WITHOUT turn order
+    const member = new Member({
+      user: req.user.id,
+      group: invitation.group._id,
+      role: invitation.role,
+      status: "active",
+      // No turnOrder assigned yet
+    });
+
+    await member.save();
+
+    // Update invitation status
+    invitation.status = "accepted";
+    invitation.invitedUser = req.user.id;
+    await invitation.save();
+
+    res.json({
+      success: true,
+      message: "Successfully joined the group",
+      data: {
+        group: invitation.group,
+        member: {
+          id: member._id,
+          role: member.role,
+        },
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 
 // Join group with access code
 router.post("/join", auth, async (req, res) => {
