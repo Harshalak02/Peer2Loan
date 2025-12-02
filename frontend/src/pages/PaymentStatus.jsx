@@ -153,7 +153,45 @@ export default function PaymentStatus() {
   };
 
   return (
-    <h1>to do </h1>
+    <div style={styles.container}>
+      <h2 style={styles.title}>Payment Status</h2>
+
+      {status === "CHECKING" && <p>Checking payment status...</p>}
+
+      {status === "SUCCESS" && (
+        <>
+          <p style={{ color: "green", fontWeight: "bold" }}>
+            ✅ Payment Successful!
+          </p>
+          <p>Amount: ₹{amount}</p>
+          <p>Transaction ID: {id}</p>
+          {completedAt && <p>Completed at: {new Date(completedAt).toLocaleString()}</p>}
+          {autoVerifyComplete && (
+            <p style={{ color: "green", fontSize: "14px", marginTop: "10px" }}>
+              ✅ Payment verified automatically. Redirecting to group...
+            </p>
+          )}
+        </>
+      )}
+
+      {status === "FAILED" && (
+        <p style={{ color: "red", fontWeight: "bold" }}>❌ Payment Failed!</p>
+      )}
+
+      {status === "UNKNOWN" && (
+        <p style={{ color: "orange", fontWeight: "bold" }}>
+          ⚠️ Unknown payment status
+        </p>
+      )}
+
+      {status === "ERROR" && (
+        <p style={{ color: "red" }}>⚠️ Error fetching payment status</p>
+      )}
+
+      <button onClick={handleBackToGroup} style={styles.button}>
+        Go Back to Group
+      </button>
+    </div>
   );
 }
 
