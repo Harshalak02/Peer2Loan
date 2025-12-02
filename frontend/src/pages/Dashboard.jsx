@@ -2286,8 +2286,28 @@ const Dashboard = () => {
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
                     {searchTerm ? `No groups found` : 'No groups yet'}
                   </h3>
-                 
-                  
+                  <p className="text-gray-500 mb-6">
+                    {searchTerm 
+                      ? `We couldn't find any groups matching "${searchTerm}"`
+                      : 'Start by creating your first lending circle'
+                    }
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Link
+                      to="/create-group"
+                      className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
+                    >
+                      Create First Group
+                    </Link>
+                    {searchTerm && (
+                      <button
+                        onClick={() => setSearchTerm('')}
+                        className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+                      >
+                        Clear Search
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -2304,7 +2324,13 @@ const Dashboard = () => {
                     <h2 className="text-xl font-bold text-gray-900">Pending Actions</h2>
                     <p className="text-sm text-gray-500 mt-1">Review and complete these actions</p>
                   </div>
-                
+                  <button
+                    onClick={() => setShowPendingActions(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <span className="sr-only">Close</span>
+                    <span className="text-gray-500 text-xl">×</span>
+                  </button>
                 </div>
               </div>
 
@@ -2340,7 +2366,17 @@ const Dashboard = () => {
                     </div>
 
                     <div className="mt-4 flex gap-3">
-                      
+                      {action.type === 'payment' && (
+                        <button 
+                          onClick={() => navigate(`/groups/${action.groupId}`)}
+                          className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                        >
+                          {/* <DollarSign className="h-4 w-4" /> */}
+
+<IndianRupee className="h-4 w-4 " />
+                          Proceed to Pay
+                        </button>
+                      )}
                       {action.type === 'join_request' && (
                         <>
                           <button 
@@ -2373,7 +2409,12 @@ const Dashboard = () => {
                           {verifyPaymentMutation.isLoading ? 'Verifying...' : 'Verify Payment'}
                         </button>
                       )}
-                     
+                      {action.type === 'payment_pending' && (
+                        <span className="text-sm text-blue-600 flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          Awaiting verification
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}
