@@ -454,328 +454,875 @@
 
 // export default Dashboard
 
+//////////////////////////////////////////////////////////////////////////////////working dashboard
+
+// import React, { useState, useMemo, useEffect } from 'react'
+// import { Link } from 'react-router-dom'
+// import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+// import { useAuth } from '../hooks/useAuth.jsx'
+// import { Users, Calendar, TrendingUp, AlertCircle, Plus, Clock, CheckCircle, DollarSign } from 'lucide-react'
+// import { groupService, cycleService } from '../services/api.js'
+// import api from '../services/api.js'
+// import Navbar from '../components/Layout/Navbar.jsx'
+// import { useNavigate } from 'react-router-dom';
+
+// const Dashboard = () => {
+//   const { user } = useAuth()
+//   const [showPendingActions, setShowPendingActions] = useState(false)
+//   const queryClient = useQueryClient()
+
+//   console.log('🚀 DEBUG: Dashboard component rendering');
+
+//   const { data: groupsData, isLoading: groupsLoading, error: groupsError } = useQuery({
+//     queryKey: ['userGroups'],
+//     queryFn: async () => {
+//       console.log('🔄 DEBUG: Starting groups fetch...');
+//       try {
+//         const response = await groupService.getUserGroups();
+//         console.log('✅ DEBUG: Groups API full response:', response);
+//         console.log('🔍 DEBUG: Groups response.data:', response.data);
+//         console.log('🔍 DEBUG: Groups response.data.data:', response.data?.data);
+//         console.log('🔍 DEBUG: Is groups data array?', Array.isArray(response.data?.data));
+//         console.log('🔍 DEBUG: Groups data length:', response.data?.data?.length);
+//         return response;
+//       } catch (error) {
+//         console.error('❌ DEBUG: Groups API error:', error);
+//         throw error;
+//       }
+//     }
+//   });
+//   const navigate = useNavigate();
+
+//   // More flexible safeGroupsArray definition
+//   let safeGroupsArray = [];
+//   console.log('🔍 DEBUG: Raw groupsData:', groupsData);
+
+//   if (groupsData?.data?.data && Array.isArray(groupsData.data.data)) {
+//     safeGroupsArray = groupsData.data.data;
+//     console.log('✅ DEBUG: Using nested groupsData.data.data array');
+//   } else if (groupsData?.data && Array.isArray(groupsData.data)) {
+//     safeGroupsArray = groupsData.data;
+//     console.log('✅ DEBUG: Using groupsData.data array');
+//   } else if (groupsData && Array.isArray(groupsData)) {
+//     safeGroupsArray = groupsData;
+//     console.log('✅ DEBUG: Using groupsData array directly');
+//   } else {
+//     console.log('❌ DEBUG: No groups array found in groupsData:', groupsData);
+//   }
+
+//   console.log('🔍 DEBUG: Final safeGroupsArray:', safeGroupsArray);
+//   console.log('🔍 DEBUG: Final safeGroupsArray length:', safeGroupsArray.length);
+//   console.log('🔍 DEBUG: safeGroupsArray contents:', safeGroupsArray.map(g => ({
+//     groupId: g.group?._id,
+//     groupName: g.group?.name,
+//     role: g.role,
+//     isOrganizer: g.role === 'organizer'
+//   })));
+
+//   // Temporary debug - check the actual API response
+//   useEffect(() => {
+//     console.log('🔍 DEBUG: groupsData full object:', groupsData);
+//     console.log('🔍 DEBUG: groupsData?.data:', groupsData?.data);
+//     console.log('🔍 DEBUG: groupsData?.data type:', typeof groupsData?.data);
+//     console.log('🔍 DEBUG: Is groupsData?.data array?', Array.isArray(groupsData?.data));
+//   }, [groupsData]);
+
+//   // Fetch all cycles data
+//   const { data: cyclesData, isLoading: cyclesLoading, error: cyclesError } = useQuery({
+//     queryKey: ['allCycles', safeGroupsArray.map(m => m.group?._id).join('-')],
+//     queryFn: async () => {
+//       console.log('🔄 DEBUG: Starting cycles fetch');
+//       console.log('🔍 DEBUG: safeGroupsArray for cycles:', safeGroupsArray);
+      
+//       if (!Array.isArray(safeGroupsArray) || safeGroupsArray.length === 0) {
+//         console.log('🔄 DEBUG: No groups, returning empty cycles');
+//         return []
+//       }
+      
+//       try {
+//         console.log('🔍 DEBUG: Fetching cycles for groups:', safeGroupsArray.map(g => g.group?._id));
+        
+//         const cyclesPromises = safeGroupsArray.map(member => {
+//           console.log(`🔍 DEBUG: Fetching cycles for group: ${member.group?.name} (${member.group?._id})`);
+//           return cycleService.getGroupCycles(member.group?._id)
+//             .then(result => {
+//               console.log(`✅ DEBUG: Cycles API success for ${member.group?.name}:`, result);
+//               return result;
+//             })
+//             .catch((error) => {
+//               console.error(`❌ DEBUG: Error fetching cycles for group ${member.group?._id}:`, error);
+//               return { data: [] }
+//             });
+//         });
+        
+//         const results = await Promise.all(cyclesPromises);
+//         console.log('🔍 DEBUG: Raw cycles results from API:', results);
+        
+//         const flattened = results.flatMap((result, idx) => {
+//           console.log(`🔍 DEBUG: Processing result ${idx} for group ${safeGroupsArray[idx]?.group?.name}:`, result);
+          
+//           let cycles = [];
+//           if (Array.isArray(result?.data)) {
+//             cycles = result.data;
+//             console.log(`✅ DEBUG: Using result.data array with ${cycles.length} cycles`);
+//           } else if (result?.data?.data && Array.isArray(result.data.data)) {
+//             cycles = result.data.data;
+//             console.log(`✅ DEBUG: Using result.data.data array with ${cycles.length} cycles`);
+//           } else if (Array.isArray(result)) {
+//             cycles = result;
+//             console.log(`✅ DEBUG: Using result array directly with ${cycles.length} cycles`);
+//           } else {
+//             console.log(`❌ DEBUG: No cycles array found in result:`, result);
+//           }
+          
+//           console.log(`🔍 DEBUG: Extracted ${cycles.length} cycles for group ${safeGroupsArray[idx]?.group?.name}`);
+          
+//           // Debug each cycle's payments
+//           cycles.forEach((cycle, cycleIdx) => {
+//             console.log(`   Cycle ${cycleIdx + 1}:`, {
+//               cycleId: cycle._id,
+//               cycleNumber: cycle.cycleNumber,
+//               status: cycle.status,
+//               paymentsCount: Array.isArray(cycle.payments) ? cycle.payments.length : 0,
+//               payments: Array.isArray(cycle.payments) ? cycle.payments.map(p => ({
+//                 paymentId: p._id,
+//                 memberId: p.member?._id || p.member,
+//                 userId: p.user?._id || p.user,
+//                 proof: p.proof,
+//                 verified: p.verified,
+//                 hasProofNeedsVerification: p.proof && !p.verified
+//               })) : 'No payments array'
+//             });
+//           });
+          
+//           return cycles.map(cycle => ({
+//             ...cycle,
+//             groupId: safeGroupsArray[idx].group?._id,
+//             groupName: safeGroupsArray[idx].group?.name
+//           }));
+//         });
+        
+//         console.log('✅ DEBUG: Final flattened cycles data:', flattened);
+//         return flattened;
+//       } catch (error) {
+//         console.error('❌ DEBUG: Error in cycles fetch function:', error);
+//         return [];
+//       }
+//     },
+//     enabled: safeGroupsArray.length > 0
+//   })
+
+//   console.log('🔍 DEBUG: cyclesData:', cyclesData);
+//   console.log('🔍 DEBUG: cyclesLoading:', cyclesLoading);
+//   console.log('🔍 DEBUG: cyclesError:', cyclesError);
+
+//   // Debug payment data in cycles
+//   useEffect(() => {
+//     if (cyclesData && Array.isArray(cyclesData)) {
+//       console.log('💰 DEBUG: Analyzing cycles with payments data:');
+//       let totalPaymentsNeedingVerification = 0;
+      
+//       cyclesData.forEach((cycle, index) => {
+//         console.log(`Cycle ${index + 1} (${cycle.groupName}):`, {
+//           cycleId: cycle._id,
+//           cycleNumber: cycle.cycleNumber,
+//           status: cycle.status,
+//           paymentsCount: Array.isArray(cycle.payments) ? cycle.payments.length : 0,
+//         });
+        
+//         // Log individual payments that need verification
+//         if (Array.isArray(cycle.payments)) {
+//           cycle.payments.forEach((payment, pIndex) => {
+//             if (payment.proof && !payment.verified) {
+//               totalPaymentsNeedingVerification++;
+//               console.log(`   🔔 Payment needs verification:`, {
+//                 paymentId: payment._id,
+//                 member: payment.user?.name || payment.member?.user?.name || 'Unknown',
+//                 proof: payment.proof,
+//                 verified: payment.verified,
+//                 cycle: cycle.cycleNumber,
+//                 group: cycle.groupName
+//               });
+//             }
+//           });
+//         }
+//       });
+      
+//       console.log(`💰 DEBUG: Total payments needing verification: ${totalPaymentsNeedingVerification}`);
+//     } else if (cyclesLoading) {
+//       console.log('🔄 DEBUG: Cycles data is still loading...');
+//     } else {
+//       console.log('❌ DEBUG: No cycles data available or not an array');
+//     }
+//   }, [cyclesData, cyclesLoading]);
+
+//   // Fetch pending join requests for all organizer groups
+//   const { data: joinRequestsData, isLoading: joinRequestsLoading } = useQuery({
+//     queryKey: ['pendingJoinRequests', safeGroupsArray.map(m => m.group?._id).join(',')],
+//     queryFn: async () => {
+//       console.log('🔄 DEBUG: Starting join requests fetch');
+      
+//       const organizerGroups = safeGroupsArray.filter(m => m.role === 'organizer')
+//       console.log('🔍 DEBUG: Organizer groups found:', organizerGroups.length);
+//       console.log('🔍 DEBUG: Organizer groups details:', organizerGroups.map(og => ({
+//         groupId: og.group?._id,
+//         groupName: og.group?.name,
+//         role: og.role
+//       })));
+
+//       if (organizerGroups.length === 0) {
+//         console.log('🔍 DEBUG: No organizer groups found');
+//         return [];
+//       }
+
+//       const requestsPromises = organizerGroups.map(m => {
+//         console.log(`🔍 DEBUG: Making API call for group ${m.group?.name} (${m.group?._id})`);
+//         return api.get(`/join-requests/group/${m.group?._id}/pending`).then(res => {
+//           console.log(`✅ DEBUG: Success for group ${m.group?.name}`, res.data);
+//           console.log(`✅ DEBUG: Requests count for ${m.group?.name}:`, res.data?.data?.length || 0);
+//           return { group: m.group, requests: res.data?.data || [] }
+//         }).catch((err) => {
+//           console.error(`❌ DEBUG: Error for group ${m.group?.name}`, err.response?.data || err.message);
+//           return { group: m.group, requests: [] }
+//         })
+//       });
+      
+//       const results = await Promise.all(requestsPromises);
+//       console.log('✅ DEBUG: All join requests results', results);
+      
+//       const totalRequests = results.reduce((sum, result) => sum + result.requests.length, 0);
+//       console.log('🔢 DEBUG: Total pending join requests across all groups', totalRequests);
+      
+//       return results;
+//     },
+//     enabled: safeGroupsArray.length > 0
+//   })
+
+//   console.log('🔍 DEBUG: joinRequestsData', joinRequestsData);
+//   console.log('🔍 DEBUG: joinRequestsLoading', joinRequestsLoading);
+
+//   // Approve join request mutation
+//   const approveMutation = useMutation({
+//     mutationFn: (requestId) => api.post(`/join-requests/${requestId}/approve`),
+//     onSuccess: () => {
+//       alert('Request approved! User has been added to the group.');
+//       // Refetch the join requests to update the list
+//       queryClient.invalidateQueries(['pendingJoinRequests']);
+//     },
+//     onError: (error) => {
+//       alert(error.response?.data?.message || 'Failed to approve request');
+//     }
+//   })
+
+//   // Reject join request mutation
+//   const rejectMutation = useMutation({
+//     mutationFn: (requestId) => api.post(`/join-requests/${requestId}/reject`, { reason: 'Request rejected by organizer' }),
+//     onSuccess: () => {
+//       alert('Request rejected.');
+//       // Refetch the join requests to update the list
+//       queryClient.invalidateQueries(['pendingJoinRequests']);
+//     },
+//     onError: (error) => {
+//       alert(error.response?.data?.message || 'Failed to reject request');
+//     }
+//   })
+
+//   // Verify payment mutation
+//   const verifyPaymentMutation = useMutation({
+//     mutationFn: ({ cycleId, paymentId }) => 
+//       api.post(`/payments/verify`, { cycleId, paymentId }),
+//     onSuccess: () => {
+//       alert('Payment verified successfully!');
+//       // Refetch cycles data to update the list
+//       queryClient.invalidateQueries(['allCycles']);
+//       queryClient.invalidateQueries(['pendingJoinRequests']);
+//     },
+//     onError: (error) => {
+//       alert(error.response?.data?.message || 'Failed to verify payment');
+//     }
+//   })
+
+//   // Calculate pending actions
+//   const pendingActions = useMemo(() => {
+//     console.log('🔄 DEBUG: Calculating pending actions...');
+//     console.log('🔍 DEBUG: Inputs - cyclesData:', cyclesData, 'joinRequestsData:', joinRequestsData);
+    
+//     const actions = []
+//     const cyclesArray = Array.isArray(cyclesData) ? cyclesData : [];
+    
+//     console.log('🔍 DEBUG: cyclesArray for pending actions', cyclesArray);
+//     console.log('🔍 DEBUG: safeGroupsArray for pending actions', safeGroupsArray);
+
+//     // For members: unpaid cycles and payment verifications pending
+//     safeGroupsArray.forEach(member => {
+//       console.log(`🔍 DEBUG: Processing member ${member._id} in group ${member.group?.name}, role: ${member.role}`);
+//       const groupCycles = cyclesArray.filter(c => c.groupId === member.group?._id && c.status === 'active')
+//       console.log(`🔍 DEBUG: Active cycles for member ${member._id}:`, groupCycles.length);
+      
+//       groupCycles.forEach(cycle => {
+//         const memberPayment = Array.isArray(cycle.payments)
+//           ? cycle.payments.find(p => {
+//               const payMemberId = p.member?._id || p.member
+//               const match = payMemberId && String(payMemberId) === String(member._id)
+//               if (match) {
+//                 console.log(`🔍 DEBUG: Found payment for member ${member._id} in cycle ${cycle._id}:`, p);
+//               }
+//               return match
+//             })
+//           : null
+
+//         console.log(`🔍 DEBUG: Member ${member._id} payment status for cycle ${cycle._id}:`, 
+//           memberPayment ? (memberPayment.verified ? 'VERIFIED' : 'PAID BUT NOT VERIFIED') : 'UNPAID');
+
+//         if (!memberPayment && member.joinedAt && cycle.status === 'active') {
+//           console.log(`➕ DEBUG: Adding payment action for member ${member._id}`);
+//           actions.push({
+//             id: `payment-${cycle._id}-${member._id}`,
+//             type: 'payment',
+//             groupId: member.group?._id,
+//             groupName: member.group?.name,
+//             title: `Pay for Cycle ${cycle.cycleNumber}`,
+//             description: `₹${member.group?.monthlyContribution} payment due`,
+//             amount: member.group?.monthlyContribution,
+//             status: 'pending',
+//             dueDate: cycle.endDate,
+//             role: 'member'
+//           })
+//         } else if (memberPayment?.proof && !memberPayment.verified) {
+//           console.log(`➕ DEBUG: Adding verification pending action for member ${member._id}`);
+//           actions.push({
+//             id: `verify-${cycle._id}-${member._id}`,
+//             type: 'payment_pending',
+//             groupId: member.group?._id,
+//             groupName: member.group?.name,
+//             title: `Payment Verification Pending - Cycle ${cycle.cycleNumber}`,
+//             description: 'Awaiting organizer approval',
+//             amount: member.group?.monthlyContribution,
+//             status: 'awaiting_approval',
+//             role: 'member'
+//           })
+//         }
+//       })
+//     })
+
+//     // For organizers: always show pending join requests
+//     if (Array.isArray(joinRequestsData)) {
+//       console.log('🔍 DEBUG: Processing joinRequestsData', joinRequestsData);
+//       joinRequestsData.forEach(({ group, requests }) => {
+//         const safeRequests = Array.isArray(requests) ? requests : [];
+//         console.log(`🔍 DEBUG: Group ${group?.name} has ${safeRequests.length} pending join requests`);
+        
+//         safeRequests.forEach(request => {
+//           if (request.status === 'pending') {
+//             console.log(`➕ DEBUG: Adding join request action for ${request.user?.name}`);
+//             actions.push({
+//               id: `join-request-${request._id}`,
+//               type: 'join_request',
+//               groupId: group._id,
+//               groupName: group.name,
+//               title: `Pending Join Request - ${request.user?.name || 'Unknown'}`,
+//               description: `${request.user?.email} wants to join`,
+//               status: 'pending',
+//               requestId: request._id,
+//               userId: request.user?._id,
+//               requestedAt: request.createdAt,
+//               role: 'organizer'
+//             });
+//           }
+//         });
+//       });
+//     } else {
+//       console.log('🔍 DEBUG: joinRequestsData is not an array or is undefined');
+//     }
+
+//     // Organizer: show pending payment verifications
+//     safeGroupsArray.forEach(member => {
+//       if (member.role === 'organizer') {
+//         console.log(`🔍 DEBUG: Processing organizer ${member._id} for payment verifications in group ${member.group?.name}`);
+//         const groupCycles = cyclesArray.filter(c => c.groupId === member.group?._id && c.status === 'active')
+//         console.log(`🔍 DEBUG: Found ${groupCycles.length} active cycles for organizer verification`);
+        
+//         groupCycles.forEach(cycle => {
+//           console.log(`🔍 DEBUG: Checking cycle ${cycle.cycleNumber} for unverified payments`);
+//           if (Array.isArray(cycle.payments)) {
+//             cycle.payments.forEach(payment => {
+//               // Check if payment has proof but is not verified
+//               if (payment.proof && !payment.verified) {
+//                 const memberName = payment.user?.name || payment.member?.user?.name || 'Unknown User'
+//                 console.log(`➕ DEBUG: Adding verify payment action for ${memberName}`);
+//                 actions.push({
+//                   id: `verify-payment-${cycle._id}-${payment._id}`,
+//                   type: 'verify_payment',
+//                   groupId: member.group?._id,
+//                   groupName: member.group?.name,
+//                   title: `Verify Payment - ${memberName}`,
+//                   description: `Cycle ${cycle.cycleNumber} - ₹${member.group?.monthlyContribution}`,
+//                   amount: member.group?.monthlyContribution,
+//                   status: 'awaiting_approval',
+//                   cycleId: cycle._id,
+//                   paymentId: payment._id,
+//                   memberName: memberName,
+//                   role: 'organizer'
+//                 })
+//               }
+//             })
+//           } else {
+//             console.log(`🔍 DEBUG: Cycle ${cycle.cycleNumber} has no payments array or payments is not array`);
+//           }
+//         })
+//       }
+//     })
+
+//     const uniqueActions = actions.filter((action, idx, self) => self.findIndex(a => a.id === action.id) === idx);
+//     console.log('✅ DEBUG: Final pending actions count', uniqueActions.length);
+//     console.log('✅ DEBUG: Final pending actions', uniqueActions);
+    
+//     return uniqueActions;
+//   }, [safeGroupsArray, cyclesData, joinRequestsData])
+
+//   console.log('🔍 DEBUG: pendingActions (outside useMemo)', pendingActions);
+//   console.log('🔍 DEBUG: pendingActions length', pendingActions.length);
+
+//   // Use fallback for group size and contribution
+//   const totalGroups = safeGroupsArray.length;
+
+//   const activeCycles = useMemo(() => {
+//     const cyclesArray = Array.isArray(cyclesData) ? cyclesData : [];
+//     const active = cyclesArray.filter(c => c.status === 'active').length;
+//     console.log('🔍 DEBUG: activeCycles', active);
+//     return active;
+//   }, [cyclesData]);
+
+//   const totalContributions = useMemo(() => {
+//     const cyclesArray = Array.isArray(cyclesData) ? cyclesData : [];
+//     let total = 0;
+//     cyclesArray.forEach(cycle => {
+//       if (Array.isArray(cycle.payments)) {
+//         cycle.payments.forEach(payment => {
+//           if (payment.verified) {
+//             const groupData = safeGroupsArray.find(m => m.group?._id === cycle.groupId);
+//             total += groupData?.group?.monthlyContribution || cycle.potAmount || 0;
+//           }
+//         });
+//       }
+//     });
+//     console.log('🔍 DEBUG: totalContributions', total);
+//     return total;
+//   }, [cyclesData, safeGroupsArray]);
+
+//   const stats = [
+//     {
+//       title: 'Total Groups',
+//       value: totalGroups,
+//       icon: Users,
+//       color: 'blue'
+//     },
+//     {
+//       title: 'Active Cycles',
+//       value: activeCycles,
+//       icon: Calendar,
+//       color: 'green'
+//     },
+//     {
+//       title: 'Total Contributions',
+//       value: `₹${totalContributions}`,
+//       icon: TrendingUp,
+//       color: 'purple'
+//     },
+//     {
+//       title: 'Pending Actions',
+//       value: pendingActions.length,
+//       icon: AlertCircle,
+//       color: 'red',
+//       clickable: true,
+//       onClick: () => {
+//         console.log('🔍 DEBUG: Pending actions clicked, count:', pendingActions.length);
+//         console.log('🔍 DEBUG: Pending actions details:', pendingActions);
+//         setShowPendingActions(!showPendingActions);
+//       }
+//     }
+//   ]
+
+//   console.log('🔍 DEBUG: Stats values', stats.map(stat => ({ title: stat.title, value: stat.value })));
+
+//   if (groupsLoading) {
+//     return (
+//       <div className="flex justify-center items-center h-64">
+//         <div className="loading-spinner"></div>
+//       </div>
+//     )
+//   }
+
+//   if (groupsError) {
+//     return (
+//       <div className="flex justify-center items-center h-64">
+//         <div className="text-center">
+//           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+//           <h3 className="text-lg font-medium text-gray-800 mb-2">Error loading groups</h3>
+//           <p className="text-gray-600">Failed to load your groups. Please try again.</p>
+//         </div>
+//       </div>
+//     )
+//   }
+
+//   return (
+//     <>
+      
+//       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 max-w-7xl mx-auto px-4 py-8">
+//         {/* Welcome Section */}
+//         <div className="mb-12">
+//           <h1 className="text-3xl font-bold text-slate-900 mb-2">Welcome back, {user?.name}!</h1>
+//           <p className="text-slate-600">Here's your lending circle overview</p>
+//         </div>
+
+//         {/* Stats Grid */}
+//         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+//           {stats.map((stat, index) => {
+//             const Icon = stat.icon
+//             return (
+//               <div
+//                 key={index}
+//                 className={`bg-white rounded-lg shadow-sm p-6 border-l-4 border-${stat.color}-500 hover:shadow-md transition-shadow ${stat.clickable ? 'cursor-pointer' : ''}`}
+//                 onClick={stat.onClick}
+//               >
+//                 <div className="flex items-center justify-between">
+//                   <div>
+//                     <p className="text-sm text-slate-600 mb-1">{stat.title}</p>
+//                     <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
+//                   </div>
+//                   <div className={`p-3 bg-${stat.color}-100 rounded-lg`}>
+//                     <Icon className={`h-6 w-6 text-${stat.color}-600`} />
+//                   </div>
+//                 </div>
+//               </div>
+//             )
+//           })}
+//         </div>
+
+//         {/* Pending Actions Modal */}
+//         {showPendingActions && (
+//           <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+//             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-auto">
+//               <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex justify-between items-center">
+//                 <h2 className="text-xl font-bold text-slate-900">Pending Actions</h2>
+//                 <button
+//                   onClick={() => setShowPendingActions(false)}
+//                   className="text-slate-400 hover:text-slate-600"
+//                 >
+//                   ✕
+//                 </button>
+//               </div>
+
+//               {pendingActions.length > 0 ? (
+//                 <div className="divide-y divide-slate-200">
+//                   {pendingActions.map((action) => (
+//                     <div key={action.id} className="p-6 hover:bg-slate-50 transition-colors">
+//                       <div className="flex items-start justify-between mb-2">
+//                         <div className="flex-1">
+//                           <h3 className="font-semibold text-slate-900">{action.title}</h3>
+//                           <p className="text-sm text-slate-600 mt-1">{action.description}</p>
+//                           <p className="text-xs text-slate-500 mt-2">Group: {action.groupName}</p>
+//                           {action.type === 'join_request' && (
+//                             <>
+//                               <p className="text-xs text-slate-500 mt-1">Requested: {action.requestedAt ? new Date(action.requestedAt).toLocaleDateString() : ''}</p>
+//                             </>
+//                           )}
+//                           {action.type === 'verify_payment' && (
+//                             <>
+//                               <p className="text-xs text-slate-500 mt-1">Member: {action.memberName}</p>
+//                               <p className="text-xs text-slate-500 mt-1">Cycle: {action.description.split(' - ')[0]}</p>
+//                             </>
+//                           )}
+//                         </div>
+//                         <span className={`ml-4 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+//                           action.status === 'pending' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+//                         }`}>
+//                           {action.status === 'pending' ? 'Pending' : 'Awaiting Approval'}
+//                         </span>
+//                       </div>
+//                       {action.amount && (
+//                         <p className="text-sm font-medium text-slate-900 mt-2">Amount: ₹{action.amount}</p>
+//                       )}
+//                       <div className="mt-4 flex gap-2">
+//                         {action.type === 'payment' && (
+//                           <button 
+//                             onClick={() => {
+//                               navigate(`/groups/${action.groupId}`);
+//                             }}
+//                             className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+//                           >
+//                             Proceed for Payment
+//                           </button>
+//                         )}
+//                         {action.type === 'join_request' && (
+//                           <>
+//                             <button 
+//                               onClick={() => approveMutation.mutate(action.requestId)}
+//                               disabled={approveMutation.isLoading || rejectMutation.isLoading}
+//                               className="px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
+//                             >
+//                               {approveMutation.isLoading ? 'Approving...' : 'Approve'}
+//                             </button>
+//                             <button 
+//                               onClick={() => rejectMutation.mutate(action.requestId)}
+//                               disabled={approveMutation.isLoading || rejectMutation.isLoading}
+//                               className="px-4 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:opacity-50 transition-colors"
+//                             >
+//                               {rejectMutation.isLoading ? 'Rejecting...' : 'Reject'}
+//                             </button>
+//                           </>
+//                         )}
+//                         {action.type === 'verify_payment' && (
+//                           <button 
+//                             onClick={() => verifyPaymentMutation.mutate({
+//                               cycleId: action.cycleId, 
+//                               paymentId: action.paymentId
+//                             })}
+//                             disabled={verifyPaymentMutation.isLoading}
+//                             className="px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
+//                           >
+//                             {verifyPaymentMutation.isLoading ? 'Verifying...' : 'Verify Payment'}
+//                           </button>
+//                         )}
+//                         {action.type === 'payment_pending' && (
+//                           <span className="text-sm text-yellow-600 font-medium">Waiting for organizer verification</span>
+//                         )}
+//                       </div>
+//                     </div>
+//                   ))}
+//                 </div>
+//               ) : (
+//                 <div className="text-center py-12 px-6">
+//                   <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+//                   <p className="text-slate-600">No pending actions</p>
+//                   <p className="text-sm text-slate-500 mt-2">All caught up! 🎉</p>
+//                 </div>
+//               )}
+//             </div>
+//           </div>
+//         )}
+
+//         {/* Groups Section */}
+//         <div className="bg-white rounded-lg shadow-sm p-8">
+//           <h2 className="text-xl font-bold text-slate-900 mb-6">Your Groups</h2>
+//           {safeGroupsArray.length > 0 ? (
+//             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+//               {safeGroupsArray.map((member) => (
+//                 <Link
+//                   key={member._id}
+//                   to={`/groups/${member.group?._id}`}
+//                   className="border border-slate-200 rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer"
+//                 >
+//                   <div className="flex justify-between items-start mb-4">
+//                     <div>
+//                       <h3 className="text-lg font-semibold text-slate-900">{member.group?.name}</h3>
+//                       <p className="text-sm text-slate-500">Role: {member.role}</p>
+//                     </div>
+//                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+//                       member.group?.status === 'active'
+//                         ? 'bg-green-100 text-green-700'
+//                         : 'bg-gray-100 text-gray-700'
+//                     }`}>
+//                       {member.group?.status}
+//                     </span>
+//                   </div>
+//                   <div className="space-y-2 text-sm text-slate-600">
+//                     <p>👥 {member.group?.totalMembers} members</p>
+//                     <p>💰 ₹{member.group?.monthlyContribution} per cycle</p>
+//                     <p>📅 Cycle Length: {member.group?.cycleLength} months</p>
+//                   </div>
+//                 </Link>
+//               ))}
+//             </div>
+//           ) : (
+//             <div className="text-center py-12">
+//               <AlertCircle className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+//               <p className="text-slate-600">You haven't joined any lending circles yet</p>
+//             </div>
+//           )}
+//         </div>
+//       </div>
+//     </>
+//   )
+// }
+
+// export default Dashboard
+// --------------------------------------- working dashboard 547 - end
 
 
-import React, { useState, useMemo, useEffect } from 'react'
+
+import React, { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../hooks/useAuth.jsx'
-import { Users, Calendar, TrendingUp, AlertCircle, Plus, Clock, CheckCircle, DollarSign } from 'lucide-react'
+import { 
+  Users, 
+  Calendar, 
+  TrendingUp, 
+  AlertCircle, 
+  Plus, 
+  Clock, 
+  CheckCircle, 
+  DollarSign,
+  Shield,
+  Building2,
+  ArrowRight,
+  Eye,
+  ChevronRight,
+  UserCheck,
+  FileCheck
+} from 'lucide-react'
 import { groupService, cycleService } from '../services/api.js'
 import api from '../services/api.js'
 import Navbar from '../components/Layout/Navbar.jsx'
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom'
 
 const Dashboard = () => {
   const { user } = useAuth()
   const [showPendingActions, setShowPendingActions] = useState(false)
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
 
-  console.log('🚀 DEBUG: Dashboard component rendering');
-
+  // Fetch user groups
   const { data: groupsData, isLoading: groupsLoading, error: groupsError } = useQuery({
     queryKey: ['userGroups'],
     queryFn: async () => {
-      console.log('🔄 DEBUG: Starting groups fetch...');
       try {
-        const response = await groupService.getUserGroups();
-        console.log('✅ DEBUG: Groups API full response:', response);
-        console.log('🔍 DEBUG: Groups response.data:', response.data);
-        console.log('🔍 DEBUG: Groups response.data.data:', response.data?.data);
-        console.log('🔍 DEBUG: Is groups data array?', Array.isArray(response.data?.data));
-        console.log('🔍 DEBUG: Groups data length:', response.data?.data?.length);
-        return response;
+        const response = await groupService.getUserGroups()
+        return response
       } catch (error) {
-        console.error('❌ DEBUG: Groups API error:', error);
-        throw error;
+        console.error('Groups API error:', error)
+        throw error
       }
     }
-  });
-  const navigate = useNavigate();
+  })
 
-  // More flexible safeGroupsArray definition
-  let safeGroupsArray = [];
-  console.log('🔍 DEBUG: Raw groupsData:', groupsData);
-
+  // Process groups array
+  let safeGroupsArray = []
   if (groupsData?.data?.data && Array.isArray(groupsData.data.data)) {
-    safeGroupsArray = groupsData.data.data;
-    console.log('✅ DEBUG: Using nested groupsData.data.data array');
+    safeGroupsArray = groupsData.data.data
   } else if (groupsData?.data && Array.isArray(groupsData.data)) {
-    safeGroupsArray = groupsData.data;
-    console.log('✅ DEBUG: Using groupsData.data array');
+    safeGroupsArray = groupsData.data
   } else if (groupsData && Array.isArray(groupsData)) {
-    safeGroupsArray = groupsData;
-    console.log('✅ DEBUG: Using groupsData array directly');
-  } else {
-    console.log('❌ DEBUG: No groups array found in groupsData:', groupsData);
+    safeGroupsArray = groupsData
   }
 
-  console.log('🔍 DEBUG: Final safeGroupsArray:', safeGroupsArray);
-  console.log('🔍 DEBUG: Final safeGroupsArray length:', safeGroupsArray.length);
-  console.log('🔍 DEBUG: safeGroupsArray contents:', safeGroupsArray.map(g => ({
-    groupId: g.group?._id,
-    groupName: g.group?.name,
-    role: g.role,
-    isOrganizer: g.role === 'organizer'
-  })));
-
-  // Temporary debug - check the actual API response
-  useEffect(() => {
-    console.log('🔍 DEBUG: groupsData full object:', groupsData);
-    console.log('🔍 DEBUG: groupsData?.data:', groupsData?.data);
-    console.log('🔍 DEBUG: groupsData?.data type:', typeof groupsData?.data);
-    console.log('🔍 DEBUG: Is groupsData?.data array?', Array.isArray(groupsData?.data));
-  }, [groupsData]);
-
-  // Fetch all cycles data
-  const { data: cyclesData, isLoading: cyclesLoading, error: cyclesError } = useQuery({
+  // Fetch cycles data
+  const { data: cyclesData } = useQuery({
     queryKey: ['allCycles', safeGroupsArray.map(m => m.group?._id).join('-')],
     queryFn: async () => {
-      console.log('🔄 DEBUG: Starting cycles fetch');
-      console.log('🔍 DEBUG: safeGroupsArray for cycles:', safeGroupsArray);
-      
       if (!Array.isArray(safeGroupsArray) || safeGroupsArray.length === 0) {
-        console.log('🔄 DEBUG: No groups, returning empty cycles');
         return []
       }
       
       try {
-        console.log('🔍 DEBUG: Fetching cycles for groups:', safeGroupsArray.map(g => g.group?._id));
+        const cyclesPromises = safeGroupsArray.map(member => 
+          cycleService.getGroupCycles(member.group?._id).catch(() => ({ data: [] }))
+        )
         
-        const cyclesPromises = safeGroupsArray.map(member => {
-          console.log(`🔍 DEBUG: Fetching cycles for group: ${member.group?.name} (${member.group?._id})`);
-          return cycleService.getGroupCycles(member.group?._id)
-            .then(result => {
-              console.log(`✅ DEBUG: Cycles API success for ${member.group?.name}:`, result);
-              return result;
-            })
-            .catch((error) => {
-              console.error(`❌ DEBUG: Error fetching cycles for group ${member.group?._id}:`, error);
-              return { data: [] }
-            });
-        });
-        
-        const results = await Promise.all(cyclesPromises);
-        console.log('🔍 DEBUG: Raw cycles results from API:', results);
-        
+        const results = await Promise.all(cyclesPromises)
         const flattened = results.flatMap((result, idx) => {
-          console.log(`🔍 DEBUG: Processing result ${idx} for group ${safeGroupsArray[idx]?.group?.name}:`, result);
-          
-          let cycles = [];
+          let cycles = []
           if (Array.isArray(result?.data)) {
-            cycles = result.data;
-            console.log(`✅ DEBUG: Using result.data array with ${cycles.length} cycles`);
+            cycles = result.data
           } else if (result?.data?.data && Array.isArray(result.data.data)) {
-            cycles = result.data.data;
-            console.log(`✅ DEBUG: Using result.data.data array with ${cycles.length} cycles`);
+            cycles = result.data.data
           } else if (Array.isArray(result)) {
-            cycles = result;
-            console.log(`✅ DEBUG: Using result array directly with ${cycles.length} cycles`);
-          } else {
-            console.log(`❌ DEBUG: No cycles array found in result:`, result);
+            cycles = result
           }
-          
-          console.log(`🔍 DEBUG: Extracted ${cycles.length} cycles for group ${safeGroupsArray[idx]?.group?.name}`);
-          
-          // Debug each cycle's payments
-          cycles.forEach((cycle, cycleIdx) => {
-            console.log(`   Cycle ${cycleIdx + 1}:`, {
-              cycleId: cycle._id,
-              cycleNumber: cycle.cycleNumber,
-              status: cycle.status,
-              paymentsCount: Array.isArray(cycle.payments) ? cycle.payments.length : 0,
-              payments: Array.isArray(cycle.payments) ? cycle.payments.map(p => ({
-                paymentId: p._id,
-                memberId: p.member?._id || p.member,
-                userId: p.user?._id || p.user,
-                proof: p.proof,
-                verified: p.verified,
-                hasProofNeedsVerification: p.proof && !p.verified
-              })) : 'No payments array'
-            });
-          });
           
           return cycles.map(cycle => ({
             ...cycle,
             groupId: safeGroupsArray[idx].group?._id,
             groupName: safeGroupsArray[idx].group?.name
-          }));
-        });
+          }))
+        })
         
-        console.log('✅ DEBUG: Final flattened cycles data:', flattened);
-        return flattened;
+        return flattened
       } catch (error) {
-        console.error('❌ DEBUG: Error in cycles fetch function:', error);
-        return [];
+        console.error('Error in cycles fetch:', error)
+        return []
       }
     },
     enabled: safeGroupsArray.length > 0
   })
 
-  console.log('🔍 DEBUG: cyclesData:', cyclesData);
-  console.log('🔍 DEBUG: cyclesLoading:', cyclesLoading);
-  console.log('🔍 DEBUG: cyclesError:', cyclesError);
-
-  // Debug payment data in cycles
-  useEffect(() => {
-    if (cyclesData && Array.isArray(cyclesData)) {
-      console.log('💰 DEBUG: Analyzing cycles with payments data:');
-      let totalPaymentsNeedingVerification = 0;
-      
-      cyclesData.forEach((cycle, index) => {
-        console.log(`Cycle ${index + 1} (${cycle.groupName}):`, {
-          cycleId: cycle._id,
-          cycleNumber: cycle.cycleNumber,
-          status: cycle.status,
-          paymentsCount: Array.isArray(cycle.payments) ? cycle.payments.length : 0,
-        });
-        
-        // Log individual payments that need verification
-        if (Array.isArray(cycle.payments)) {
-          cycle.payments.forEach((payment, pIndex) => {
-            if (payment.proof && !payment.verified) {
-              totalPaymentsNeedingVerification++;
-              console.log(`   🔔 Payment needs verification:`, {
-                paymentId: payment._id,
-                member: payment.user?.name || payment.member?.user?.name || 'Unknown',
-                proof: payment.proof,
-                verified: payment.verified,
-                cycle: cycle.cycleNumber,
-                group: cycle.groupName
-              });
-            }
-          });
-        }
-      });
-      
-      console.log(`💰 DEBUG: Total payments needing verification: ${totalPaymentsNeedingVerification}`);
-    } else if (cyclesLoading) {
-      console.log('🔄 DEBUG: Cycles data is still loading...');
-    } else {
-      console.log('❌ DEBUG: No cycles data available or not an array');
-    }
-  }, [cyclesData, cyclesLoading]);
-
-  // Fetch pending join requests for all organizer groups
-  const { data: joinRequestsData, isLoading: joinRequestsLoading } = useQuery({
+  // Fetch pending join requests
+  const { data: joinRequestsData } = useQuery({
     queryKey: ['pendingJoinRequests', safeGroupsArray.map(m => m.group?._id).join(',')],
     queryFn: async () => {
-      console.log('🔄 DEBUG: Starting join requests fetch');
-      
       const organizerGroups = safeGroupsArray.filter(m => m.role === 'organizer')
-      console.log('🔍 DEBUG: Organizer groups found:', organizerGroups.length);
-      console.log('🔍 DEBUG: Organizer groups details:', organizerGroups.map(og => ({
-        groupId: og.group?._id,
-        groupName: og.group?.name,
-        role: og.role
-      })));
 
       if (organizerGroups.length === 0) {
-        console.log('🔍 DEBUG: No organizer groups found');
-        return [];
+        return []
       }
 
-      const requestsPromises = organizerGroups.map(m => {
-        console.log(`🔍 DEBUG: Making API call for group ${m.group?.name} (${m.group?._id})`);
-        return api.get(`/join-requests/group/${m.group?._id}/pending`).then(res => {
-          console.log(`✅ DEBUG: Success for group ${m.group?.name}`, res.data);
-          console.log(`✅ DEBUG: Requests count for ${m.group?.name}:`, res.data?.data?.length || 0);
-          return { group: m.group, requests: res.data?.data || [] }
-        }).catch((err) => {
-          console.error(`❌ DEBUG: Error for group ${m.group?.name}`, err.response?.data || err.message);
-          return { group: m.group, requests: [] }
-        })
-      });
+      const requestsPromises = organizerGroups.map(m => 
+        api.get(`/join-requests/group/${m.group?._id}/pending`)
+          .then(res => ({ group: m.group, requests: res.data?.data || [] }))
+          .catch(() => ({ group: m.group, requests: [] }))
+      )
       
-      const results = await Promise.all(requestsPromises);
-      console.log('✅ DEBUG: All join requests results', results);
-      
-      const totalRequests = results.reduce((sum, result) => sum + result.requests.length, 0);
-      console.log('🔢 DEBUG: Total pending join requests across all groups', totalRequests);
-      
-      return results;
+      const results = await Promise.all(requestsPromises)
+      return results
     },
     enabled: safeGroupsArray.length > 0
   })
 
-  console.log('🔍 DEBUG: joinRequestsData', joinRequestsData);
-  console.log('🔍 DEBUG: joinRequestsLoading', joinRequestsLoading);
-
-  // Approve join request mutation
+  // Mutations
   const approveMutation = useMutation({
     mutationFn: (requestId) => api.post(`/join-requests/${requestId}/approve`),
     onSuccess: () => {
-      alert('Request approved! User has been added to the group.');
-      // Refetch the join requests to update the list
-      queryClient.invalidateQueries(['pendingJoinRequests']);
+      alert('Request approved! User has been added to the group.')
+      queryClient.invalidateQueries(['pendingJoinRequests'])
     },
     onError: (error) => {
-      alert(error.response?.data?.message || 'Failed to approve request');
+      alert(error.response?.data?.message || 'Failed to approve request')
     }
   })
 
-  // Reject join request mutation
   const rejectMutation = useMutation({
     mutationFn: (requestId) => api.post(`/join-requests/${requestId}/reject`, { reason: 'Request rejected by organizer' }),
     onSuccess: () => {
-      alert('Request rejected.');
-      // Refetch the join requests to update the list
-      queryClient.invalidateQueries(['pendingJoinRequests']);
+      alert('Request rejected.')
+      queryClient.invalidateQueries(['pendingJoinRequests'])
     },
     onError: (error) => {
-      alert(error.response?.data?.message || 'Failed to reject request');
+      alert(error.response?.data?.message || 'Failed to reject request')
     }
   })
 
-  // Verify payment mutation
   const verifyPaymentMutation = useMutation({
     mutationFn: ({ cycleId, paymentId }) => 
       api.post(`/payments/verify`, { cycleId, paymentId }),
     onSuccess: () => {
-      alert('Payment verified successfully!');
-      // Refetch cycles data to update the list
-      queryClient.invalidateQueries(['allCycles']);
-      queryClient.invalidateQueries(['pendingJoinRequests']);
+      alert('Payment verified successfully!')
+      queryClient.invalidateQueries(['allCycles'])
+      queryClient.invalidateQueries(['pendingJoinRequests'])
     },
     onError: (error) => {
-      alert(error.response?.data?.message || 'Failed to verify payment');
+      alert(error.response?.data?.message || 'Failed to verify payment')
     }
   })
 
   // Calculate pending actions
   const pendingActions = useMemo(() => {
-    console.log('🔄 DEBUG: Calculating pending actions...');
-    console.log('🔍 DEBUG: Inputs - cyclesData:', cyclesData, 'joinRequestsData:', joinRequestsData);
-    
     const actions = []
-    const cyclesArray = Array.isArray(cyclesData) ? cyclesData : [];
-    
-    console.log('🔍 DEBUG: cyclesArray for pending actions', cyclesArray);
-    console.log('🔍 DEBUG: safeGroupsArray for pending actions', safeGroupsArray);
+    const cyclesArray = Array.isArray(cyclesData) ? cyclesData : []
 
-    // For members: unpaid cycles and payment verifications pending
+    // Member actions
     safeGroupsArray.forEach(member => {
-      console.log(`🔍 DEBUG: Processing member ${member._id} in group ${member.group?.name}, role: ${member.role}`);
       const groupCycles = cyclesArray.filter(c => c.groupId === member.group?._id && c.status === 'active')
-      console.log(`🔍 DEBUG: Active cycles for member ${member._id}:`, groupCycles.length);
       
       groupCycles.forEach(cycle => {
         const memberPayment = Array.isArray(cycle.payments)
           ? cycle.payments.find(p => {
               const payMemberId = p.member?._id || p.member
-              const match = payMemberId && String(payMemberId) === String(member._id)
-              if (match) {
-                console.log(`🔍 DEBUG: Found payment for member ${member._id} in cycle ${cycle._id}:`, p);
-              }
-              return match
+              return payMemberId && String(payMemberId) === String(member._id)
             })
           : null
 
-        console.log(`🔍 DEBUG: Member ${member._id} payment status for cycle ${cycle._id}:`, 
-          memberPayment ? (memberPayment.verified ? 'VERIFIED' : 'PAID BUT NOT VERIFIED') : 'UNPAID');
-
         if (!memberPayment && member.joinedAt && cycle.status === 'active') {
-          console.log(`➕ DEBUG: Adding payment action for member ${member._id}`);
           actions.push({
             id: `payment-${cycle._id}-${member._id}`,
             type: 'payment',
@@ -785,17 +1332,15 @@ const Dashboard = () => {
             description: `₹${member.group?.monthlyContribution} payment due`,
             amount: member.group?.monthlyContribution,
             status: 'pending',
-            dueDate: cycle.endDate,
             role: 'member'
           })
         } else if (memberPayment?.proof && !memberPayment.verified) {
-          console.log(`➕ DEBUG: Adding verification pending action for member ${member._id}`);
           actions.push({
             id: `verify-${cycle._id}-${member._id}`,
             type: 'payment_pending',
             groupId: member.group?._id,
             groupName: member.group?.name,
-            title: `Payment Verification Pending - Cycle ${cycle.cycleNumber}`,
+            title: `Payment Verification Pending`,
             description: 'Awaiting organizer approval',
             amount: member.group?.monthlyContribution,
             status: 'awaiting_approval',
@@ -805,58 +1350,47 @@ const Dashboard = () => {
       })
     })
 
-    // For organizers: always show pending join requests
+    // Organizer join requests
     if (Array.isArray(joinRequestsData)) {
-      console.log('🔍 DEBUG: Processing joinRequestsData', joinRequestsData);
       joinRequestsData.forEach(({ group, requests }) => {
-        const safeRequests = Array.isArray(requests) ? requests : [];
-        console.log(`🔍 DEBUG: Group ${group?.name} has ${safeRequests.length} pending join requests`);
-        
+        const safeRequests = Array.isArray(requests) ? requests : []
         safeRequests.forEach(request => {
           if (request.status === 'pending') {
-            console.log(`➕ DEBUG: Adding join request action for ${request.user?.name}`);
             actions.push({
               id: `join-request-${request._id}`,
               type: 'join_request',
               groupId: group._id,
               groupName: group.name,
-              title: `Pending Join Request - ${request.user?.name || 'Unknown'}`,
-              description: `${request.user?.email} wants to join`,
+              title: `Pending Join Request`,
+              description: `${request.user?.name || 'User'} wants to join`,
               status: 'pending',
               requestId: request._id,
               userId: request.user?._id,
               requestedAt: request.createdAt,
               role: 'organizer'
-            });
+            })
           }
-        });
-      });
-    } else {
-      console.log('🔍 DEBUG: joinRequestsData is not an array or is undefined');
+        })
+      })
     }
 
-    // Organizer: show pending payment verifications
+    // Organizer payment verifications
     safeGroupsArray.forEach(member => {
       if (member.role === 'organizer') {
-        console.log(`🔍 DEBUG: Processing organizer ${member._id} for payment verifications in group ${member.group?.name}`);
         const groupCycles = cyclesArray.filter(c => c.groupId === member.group?._id && c.status === 'active')
-        console.log(`🔍 DEBUG: Found ${groupCycles.length} active cycles for organizer verification`);
         
         groupCycles.forEach(cycle => {
-          console.log(`🔍 DEBUG: Checking cycle ${cycle.cycleNumber} for unverified payments`);
           if (Array.isArray(cycle.payments)) {
             cycle.payments.forEach(payment => {
-              // Check if payment has proof but is not verified
               if (payment.proof && !payment.verified) {
-                const memberName = payment.user?.name || payment.member?.user?.name || 'Unknown User'
-                console.log(`➕ DEBUG: Adding verify payment action for ${memberName}`);
+                const memberName = payment.user?.name || payment.member?.user?.name || 'Member'
                 actions.push({
                   id: `verify-payment-${cycle._id}-${payment._id}`,
                   type: 'verify_payment',
                   groupId: member.group?._id,
                   groupName: member.group?.name,
-                  title: `Verify Payment - ${memberName}`,
-                  description: `Cycle ${cycle.cycleNumber} - ₹${member.group?.monthlyContribution}`,
+                  title: `Verify Payment`,
+                  description: `${memberName} - Cycle ${cycle.cycleNumber}`,
                   amount: member.group?.monthlyContribution,
                   status: 'awaiting_approval',
                   cycleId: cycle._id,
@@ -866,100 +1400,101 @@ const Dashboard = () => {
                 })
               }
             })
-          } else {
-            console.log(`🔍 DEBUG: Cycle ${cycle.cycleNumber} has no payments array or payments is not array`);
           }
         })
       }
     })
 
-    const uniqueActions = actions.filter((action, idx, self) => self.findIndex(a => a.id === action.id) === idx);
-    console.log('✅ DEBUG: Final pending actions count', uniqueActions.length);
-    console.log('✅ DEBUG: Final pending actions', uniqueActions);
-    
-    return uniqueActions;
+    return actions.filter((action, idx, self) => 
+      self.findIndex(a => a.id === action.id) === idx
+    )
   }, [safeGroupsArray, cyclesData, joinRequestsData])
 
-  console.log('🔍 DEBUG: pendingActions (outside useMemo)', pendingActions);
-  console.log('🔍 DEBUG: pendingActions length', pendingActions.length);
-
-  // Use fallback for group size and contribution
-  const totalGroups = safeGroupsArray.length;
+  // Stats calculation
+  const totalGroups = safeGroupsArray.length
 
   const activeCycles = useMemo(() => {
-    const cyclesArray = Array.isArray(cyclesData) ? cyclesData : [];
-    const active = cyclesArray.filter(c => c.status === 'active').length;
-    console.log('🔍 DEBUG: activeCycles', active);
-    return active;
-  }, [cyclesData]);
+    const cyclesArray = Array.isArray(cyclesData) ? cyclesData : []
+    return cyclesArray.filter(c => c.status === 'active').length
+  }, [cyclesData])
 
   const totalContributions = useMemo(() => {
-    const cyclesArray = Array.isArray(cyclesData) ? cyclesData : [];
-    let total = 0;
+    const cyclesArray = Array.isArray(cyclesData) ? cyclesData : []
+    let total = 0
     cyclesArray.forEach(cycle => {
       if (Array.isArray(cycle.payments)) {
         cycle.payments.forEach(payment => {
           if (payment.verified) {
-            const groupData = safeGroupsArray.find(m => m.group?._id === cycle.groupId);
-            total += groupData?.group?.monthlyContribution || cycle.potAmount || 0;
+            const groupData = safeGroupsArray.find(m => m.group?._id === cycle.groupId)
+            total += groupData?.group?.monthlyContribution || 0
           }
-        });
+        })
       }
-    });
-    console.log('🔍 DEBUG: totalContributions', total);
-    return total;
-  }, [cyclesData, safeGroupsArray]);
+    })
+    return total
+  }, [cyclesData, safeGroupsArray])
 
   const stats = [
     {
       title: 'Total Groups',
       value: totalGroups,
       icon: Users,
-      color: 'blue'
+      bgColor: 'bg-blue-50',
+      iconColor: 'text-blue-600',
+      borderColor: 'border-blue-200'
     },
     {
       title: 'Active Cycles',
       value: activeCycles,
       icon: Calendar,
-      color: 'green'
+      bgColor: 'bg-emerald-50',
+      iconColor: 'text-emerald-600',
+      borderColor: 'border-emerald-200'
     },
     {
       title: 'Total Contributions',
       value: `₹${totalContributions}`,
       icon: TrendingUp,
-      color: 'purple'
+      bgColor: 'bg-purple-50',
+      iconColor: 'text-purple-600',
+      borderColor: 'border-purple-200'
     },
     {
       title: 'Pending Actions',
       value: pendingActions.length,
       icon: AlertCircle,
-      color: 'red',
+      bgColor: 'bg-orange-50',
+      iconColor: 'text-orange-600',
+      borderColor: 'border-orange-200',
       clickable: true,
-      onClick: () => {
-        console.log('🔍 DEBUG: Pending actions clicked, count:', pendingActions.length);
-        console.log('🔍 DEBUG: Pending actions details:', pendingActions);
-        setShowPendingActions(!showPendingActions);
-      }
+      onClick: () => setShowPendingActions(!showPendingActions)
     }
   ]
 
-  console.log('🔍 DEBUG: Stats values', stats.map(stat => ({ title: stat.title, value: stat.value })));
-
   if (groupsLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="loading-spinner"></div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your dashboard...</p>
+        </div>
       </div>
     )
   }
 
   if (groupsError) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-800 mb-2">Error loading groups</h3>
-          <p className="text-gray-600">Failed to load your groups. Please try again.</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-8">
+          <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-6" />
+          <h3 className="text-xl font-bold text-gray-900 mb-3">Error loading dashboard</h3>
+          <p className="text-gray-600 mb-6">Failed to load your groups. Please try again later.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
+          >
+            Retry
+          </button>
         </div>
       </div>
     )
@@ -967,106 +1502,142 @@ const Dashboard = () => {
 
   return (
     <>
-      
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 max-w-7xl mx-auto px-4 py-8">
-        {/* Welcome Section */}
-        <div className="mb-12">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Welcome back, {user?.name}!</h1>
-          <p className="text-slate-600">Here's your lending circle overview</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header with logo and welcome */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10">
+            <div className="mb-6 sm:mb-0">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-emerald-500 rounded-xl flex items-center justify-center shadow-sm">
+                  <Building2 className="w-6 h-6 text-white" />
+                </div>
+                <h1 className="text-2xl font-bold text-gray-900">Peer2Loan</h1>
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900">
+                  Welcome back, <span className="text-blue-600">{user?.name}</span>
+                </h2>
+                <p className="text-gray-600 mt-2">Your financial community dashboard</p>
+              </div>
+            </div>
+            
+            {/* Trust badges */}
+            <div className="flex flex-wrap gap-3">
+              <div className="flex items-center gap-2 px-3 py-2 bg-white/80 backdrop-blur-sm rounded-lg border border-gray-200">
+                <Shield className="w-4 h-4 text-emerald-500" />
+                <span className="text-sm text-gray-600">Secure Platform</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 bg-white/80 backdrop-blur-sm rounded-lg border border-gray-200">
+                <Users className="w-4 h-4 text-blue-500" />
+                <span className="text-sm text-gray-600">Community Trusted</span>
+              </div>
+            </div>
+          </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {stats.map((stat, index) => {
-            const Icon = stat.icon
-            return (
-              <div
-                key={index}
-                className={`bg-white rounded-lg shadow-sm p-6 border-l-4 border-${stat.color}-500 hover:shadow-md transition-shadow ${stat.clickable ? 'cursor-pointer' : ''}`}
-                onClick={stat.onClick}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-slate-600 mb-1">{stat.title}</p>
-                    <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
-                  </div>
-                  <div className={`p-3 bg-${stat.color}-100 rounded-lg`}>
-                    <Icon className={`h-6 w-6 text-${stat.color}-600`} />
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {stats.map((stat, index) => {
+              const Icon = stat.icon
+              return (
+                <div
+                  key={index}
+                  className={`bg-white rounded-xl border ${stat.borderColor} p-6 hover:shadow-md transition-all duration-200 ${stat.clickable ? 'cursor-pointer hover:border-blue-300' : ''}`}
+                  onClick={stat.onClick}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm text-gray-500 mb-2">{stat.title}</p>
+                      <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                      {index === 3 && pendingActions.length > 0 && (
+                        <p className="text-xs text-orange-600 mt-3 font-medium">
+                          {pendingActions.length} action{pendingActions.length !== 1 ? 's' : ''} require attention
+                        </p>
+                      )}
+                    </div>
+                    <div className={`p-3 ${stat.bgColor} rounded-lg`}>
+                      <Icon className={`h-6 w-6 ${stat.iconColor}`} />
+                    </div>
                   </div>
                 </div>
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
 
-        {/* Pending Actions Modal */}
-        {showPendingActions && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-auto">
-              <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex justify-between items-center">
-                <h2 className="text-xl font-bold text-slate-900">Pending Actions</h2>
-                <button
-                  onClick={() => setShowPendingActions(false)}
-                  className="text-slate-400 hover:text-slate-600"
-                >
-                  ✕
-                </button>
-              </div>
+          {/* Pending Actions Modal */}
+          {showPendingActions && pendingActions.length > 0 && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+                <div className="sticky top-0 bg-white border-b border-gray-100 p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">Pending Actions</h2>
+                      <p className="text-sm text-gray-500 mt-1">Items requiring your attention</p>
+                    </div>
+                    <button
+                      onClick={() => setShowPendingActions(false)}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <span className="sr-only">Close</span>
+                      <span className="text-gray-500 text-xl">×</span>
+                    </button>
+                  </div>
+                </div>
 
-              {pendingActions.length > 0 ? (
-                <div className="divide-y divide-slate-200">
+                <div className="divide-y divide-gray-100 overflow-y-auto max-h-[60vh]">
                   {pendingActions.map((action) => (
-                    <div key={action.id} className="p-6 hover:bg-slate-50 transition-colors">
-                      <div className="flex items-start justify-between mb-2">
+                    <div key={action.id} className="p-6 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-slate-900">{action.title}</h3>
-                          <p className="text-sm text-slate-600 mt-1">{action.description}</p>
-                          <p className="text-xs text-slate-500 mt-2">Group: {action.groupName}</p>
-                          {action.type === 'join_request' && (
-                            <>
-                              <p className="text-xs text-slate-500 mt-1">Requested: {action.requestedAt ? new Date(action.requestedAt).toLocaleDateString() : ''}</p>
-                            </>
-                          )}
-                          {action.type === 'verify_payment' && (
-                            <>
-                              <p className="text-xs text-slate-500 mt-1">Member: {action.memberName}</p>
-                              <p className="text-xs text-slate-500 mt-1">Cycle: {action.description.split(' - ')[0]}</p>
-                            </>
-                          )}
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className={`w-2 h-2 rounded-full ${
+                              action.status === 'pending' ? 'bg-orange-500' : 'bg-blue-500'
+                            }`}></div>
+                            <h3 className="font-semibold text-gray-900">{action.title}</h3>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-3">{action.description}</p>
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <span>Group: {action.groupName}</span>
+                            {action.amount && (
+                              <span className="font-medium">Amount: ₹{action.amount}</span>
+                            )}
+                          </div>
                         </div>
-                        <span className={`ml-4 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                          action.status === 'pending' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {action.status === 'pending' ? 'Pending' : 'Awaiting Approval'}
-                        </span>
+                        
+                        <div className="ml-4">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                            action.status === 'pending' 
+                              ? 'bg-orange-100 text-orange-700' 
+                              : 'bg-blue-100 text-blue-700'
+                          }`}>
+                            {action.status === 'pending' ? 'Pending' : 'To Review'}
+                          </span>
+                        </div>
                       </div>
-                      {action.amount && (
-                        <p className="text-sm font-medium text-slate-900 mt-2">Amount: ₹{action.amount}</p>
-                      )}
-                      <div className="mt-4 flex gap-2">
+
+                      <div className="mt-4 flex gap-3">
                         {action.type === 'payment' && (
                           <button 
-                            onClick={() => {
-                              navigate(`/groups/${action.groupId}`);
-                            }}
-                            className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                            onClick={() => navigate(`/groups/${action.groupId}`)}
+                            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
                           >
-                            Proceed for Payment
+                            <DollarSign className="h-4 w-4" />
+                            Proceed to Pay
                           </button>
                         )}
                         {action.type === 'join_request' && (
                           <>
                             <button 
                               onClick={() => approveMutation.mutate(action.requestId)}
-                              disabled={approveMutation.isLoading || rejectMutation.isLoading}
-                              className="px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
+                              disabled={approveMutation.isLoading}
+                              className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center gap-2"
                             >
+                              <UserCheck className="h-4 w-4" />
                               {approveMutation.isLoading ? 'Approving...' : 'Approve'}
                             </button>
                             <button 
                               onClick={() => rejectMutation.mutate(action.requestId)}
-                              disabled={approveMutation.isLoading || rejectMutation.isLoading}
-                              className="px-4 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:opacity-50 transition-colors"
+                              disabled={rejectMutation.isLoading}
+                              className="px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 disabled:opacity-50 transition-colors"
                             >
                               {rejectMutation.isLoading ? 'Rejecting...' : 'Reject'}
                             </button>
@@ -1079,69 +1650,206 @@ const Dashboard = () => {
                               paymentId: action.paymentId
                             })}
                             disabled={verifyPaymentMutation.isLoading}
-                            className="px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
+                            className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center gap-2"
                           >
+                            <FileCheck className="h-4 w-4" />
                             {verifyPaymentMutation.isLoading ? 'Verifying...' : 'Verify Payment'}
                           </button>
                         )}
                         {action.type === 'payment_pending' && (
-                          <span className="text-sm text-yellow-600 font-medium">Waiting for organizer verification</span>
+                          <span className="text-sm text-blue-600 flex items-center gap-2">
+                            <Clock className="h-4 w-4" />
+                            Awaiting verification
+                          </span>
                         )}
                       </div>
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className="text-center py-12 px-6">
-                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                  <p className="text-slate-600">No pending actions</p>
-                  <p className="text-sm text-slate-500 mt-2">All caught up! 🎉</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Groups Section */}
-        <div className="bg-white rounded-lg shadow-sm p-8">
-          <h2 className="text-xl font-bold text-slate-900 mb-6">Your Groups</h2>
-          {safeGroupsArray.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {safeGroupsArray.map((member) => (
-                <Link
-                  key={member._id}
-                  to={`/groups/${member.group?._id}`}
-                  className="border border-slate-200 rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-slate-900">{member.group?.name}</h3>
-                      <p className="text-sm text-slate-500">Role: {member.role}</p>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      member.group?.status === 'active'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {member.group?.status}
-                    </span>
-                  </div>
-                  <div className="space-y-2 text-sm text-slate-600">
-                    <p>👥 {member.group?.totalMembers} members</p>
-                    <p>💰 ₹{member.group?.monthlyContribution} per cycle</p>
-                    <p>📅 Cycle Length: {member.group?.cycleLength} months</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <AlertCircle className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-600">You haven't joined any lending circles yet</p>
+              </div>
             </div>
           )}
+
+          {/* Groups Section */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Your Groups</h2>
+                <p className="text-gray-500 mt-1">Manage your lending circles</p>
+              </div>
+              {/* <Link
+                to="/groups/create"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-medium rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 mt-4 sm:mt-0"
+              >
+                <Plus className="h-4 w-4" />
+                Create New Group
+              </Link> */}
+            </div>
+
+            {safeGroupsArray.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {safeGroupsArray.map((member) => (
+                  <Link
+                    key={member._id}
+                    to={`/groups/${member.group?._id}`}
+                    className="group border border-gray-200 rounded-xl p-6 hover:border-blue-300 hover:shadow-md transition-all duration-200 bg-gradient-to-br from-white to-gray-50/50"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-2">
+                          {member.group?.name}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                            member.role === 'organizer'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {member.role}
+                          </span>
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                            member.group?.status === 'active'
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {member.group?.status}
+                          </span>
+                        </div>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                    </div>
+                    
+                    <div className="space-y-3 text-sm text-gray-600 mb-6">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-gray-400" />
+                        <span>{member.group?.totalMembers || 0} members</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-gray-400" />
+                        <span>₹{member.group?.monthlyContribution} per cycle</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-gray-400" />
+                        <span>{member.group?.cycleLength || 1} month cycle</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-6 border-t border-gray-100">
+                      <button className="w-full py-2.5 text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center justify-center gap-2 group-hover:gap-3 transition-all">
+                        View Details
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-16 px-4">
+                <div className="max-w-md mx-auto">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <Users className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No groups yet</h3>
+                  <p className="text-gray-500 mb-6">
+                    Start by creating your first lending circle or joining an existing one
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    {/* <Link
+                      to="/groups/create"
+                      className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium"
+                    >
+                      Create Group
+                    </Link> */}
+                    <Link
+                      to="/groups"
+                      className="px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-colors font-medium"
+                    >
+                      Browse Groups
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Stats Footer */}
+          {safeGroupsArray.length > 0 && (
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl border border-blue-100 p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-blue-100 rounded-lg">
+                    <Shield className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Secure Transactions</h3>
+                    <p className="text-sm text-gray-500 mt-1">All payments are verified and encrypted</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl border border-emerald-100 p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-emerald-100 rounded-lg">
+                    <Users className="h-6 w-6 text-emerald-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Community Trust</h3>
+                    <p className="text-sm text-gray-500 mt-1">Verified members only in your circles</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl border border-purple-100 p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-purple-100 rounded-lg">
+                    <TrendingUp className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Growth Focused</h3>
+                    <p className="text-sm text-gray-500 mt-1">Track your financial progress</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Need Help Section */}
+          <div className="mt-12 text-center">
+            <p className="text-gray-500 text-sm">
+              Need help?{' '}
+              <Link to="/help" className="text-blue-600 hover:underline font-medium">
+                Visit our help center
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes blob {
+          0% {
+            transform: translate(0px, 0px) scale(1);
+          }
+          33% {
+            transform: translate(30px, -50px) scale(1.1);
+          }
+          66% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+          100% {
+            transform: translate(0px, 0px) scale(1);
+          }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
     </>
   )
 }
