@@ -1736,7 +1736,7 @@
 
 
 //////////////////// new ui 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../hooks/useAuth.jsx'
@@ -1759,11 +1759,13 @@ import {
 } from 'lucide-react'
 import { groupService, cycleService } from '../services/api.js'
 import api from '../services/api.js'
+import NotificationBell from '../components/Notifications/NotificationBell.jsx'
 
 const Dashboard = () => {
   const { user } = useAuth()
   const [showPendingActions, setShowPendingActions] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [groupsVisible, setGroupsVisible] = useState(true)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
 
@@ -1898,7 +1900,10 @@ const Dashboard = () => {
             })
           : null
 
-        if (!memberPayment && member.joinedAt && cycle.status === 'active') {
+        // Only show payment actions if it's NOT the user's own turn
+        const isUserTurn = member.turnOrder && member.turnOrder === cycle.cycleNumber
+
+        if (!memberPayment && member.joinedAt && cycle.status === 'active' && !isUserTurn) {
           actions.push({
             id: `payment-${cycle._id}-${member._id}`,
             type: 'payment',
@@ -1910,7 +1915,7 @@ const Dashboard = () => {
             status: 'pending',
             role: 'member'
           })
-        } else if (memberPayment?.proof && !memberPayment.verified) {
+        } else if (memberPayment?.proof && !memberPayment.verified && !isUserTurn) {
           actions.push({
             id: `verify-${cycle._id}-${member._id}`,
             type: 'payment_pending',
@@ -2054,11 +2059,13 @@ const Dashboard = () => {
     }
   ]
 
+
+
   if (groupsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <div className="text-center animate-fade-in">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4 transform hover:scale-110 transition-transform duration-300"></div>
           <p className="text-gray-600">Loading your dashboard...</p>
         </div>
       </div>
@@ -2068,13 +2075,13 @@ const Dashboard = () => {
   if (groupsError) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-8">
+        <div className="text-center max-w-md mx-auto p-8 animate-fade-in">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-6" />
-          <h3 className="text-xl font-bold text-gray-900 mb-3">Error loading dashboard</h3>
-          <p className="text-gray-600 mb-6">Failed to load your groups. Please try again later.</p>
+          <h3 className="text-xl font-bold text-gray-900 mb-3 animate-slide-in-up">Error loading dashboard</h3>
+          <p className="text-gray-600 mb-6 animate-slide-in-up animation-delay-200">Failed to load your groups. Please try again later.</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
+            className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 hover:scale-105 active:scale-95 transform transition-all duration-300 font-medium shadow-lg hover:shadow-xl animate-slide-in-up animation-delay-400"
           >
             Retry
           </button>
@@ -2087,16 +2094,16 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-10">
+        <div className="mb-10 animate-slide-in-up animation-delay-200">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-emerald-500 rounded-lg flex items-center justify-center">
-                  <Building2 className="w-6 h-6 text-white" />
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-4 group">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-emerald-500 rounded-lg flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transform transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer">
+                  <Building2 className="w-6 h-6 text-white group-hover:scale-110 transition-transform duration-300" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">
-                    Welcome back, <span className="text-blue-600">{user?.name}</span>
+                  <h1 className="text-3xl font-bold text-gray-900 hover:text-blue-600 transition-colors duration-300">
+                    Welcome back, <span className="text-blue-600 hover:text-emerald-500 transition-colors duration-300 cursor-pointer">{user?.name}</span>
                   </h1>
                   <p className="text-gray-600 mt-1">Your financial community dashboard</p>
                 </div>
@@ -2104,70 +2111,78 @@ const Dashboard = () => {
               
               {/* Quick Stats */}
               <div className="flex flex-wrap items-center gap-3 mt-4">
-                {/* <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
+                {/* <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full hover:bg-blue-200 hover:scale-105 transform transition-all duration-300 cursor-pointer">
                   {totalGroups} Groups
                 </span>
-                <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-sm font-medium rounded-full">
+                <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-sm font-medium rounded-full hover:bg-emerald-200 hover:scale-105 transform transition-all duration-300 cursor-pointer">
                   {activeCycles} Active Cycles
                 </span> */}
-                <span className="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full">
+                <span className="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full hover:bg-green-100 hover:text-green-700 hover:scale-105 transform transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md">
                   Verified Member
                 </span>
               </div>
             </div>
             
-            <Link
+            {/* Right side with notification bell */}
+            <div className="flex items-center justify-end lg:justify-start">
+              <div className="hover:scale-110 transform transition-all duration-300">
+                <NotificationBell />
+              </div>
+            </div>
+            
+            {/* <Link
               to="/create-group"
               className="inline-flex items-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-sm"
             >
               <Plus className="w-5 h-5" />
               Create New Group
-            </Link>
-          </div>
-        </div>
-
-        {/* Search */}
-        <div className="mb-8">
-          <div className="relative max-w-lg">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search your groups..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            />
+            </Link> */}
           </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-slide-in-up animation-delay-400">
           {stats.map((stat, index) => {
             const Icon = stat.icon
             return (
               <div
                 key={index}
-                className={`bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow ${stat.clickable ? 'cursor-pointer hover:border-blue-300' : ''}`}
+                className={`bg-white rounded-xl border border-gray-200 p-6 hover:shadow-xl hover:shadow-blue-100 hover:-translate-y-1 transform transition-all duration-300 group animate-fade-in-scale ${stat.clickable ? 'cursor-pointer hover:border-blue-300 active:scale-95' : 'hover:border-gray-300'}`}
+                style={{ animationDelay: `${index * 150}ms` }}
                 onClick={stat.onClick}
               >
                 <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500 mb-2">{stat.title}</p>
-                    <p className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</p>
-                    <p className="text-xs text-gray-500">{stat.description}</p>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-500 mb-2 group-hover:text-gray-700 transition-colors duration-300">{stat.title}</p>
+                    <p className="text-2xl font-bold text-gray-900 mb-1 group-hover:scale-105 transform transition-transform duration-300 origin-left">{stat.value}</p>
+                    <p className="text-xs text-gray-500 group-hover:text-gray-600 transition-colors duration-300">{stat.description}</p>
                     {index === 3 && pendingActions.length > 0 && (
-                      <p className="text-xs text-orange-600 mt-2 font-medium">
+                      <p className="text-xs text-orange-600 mt-2 font-medium group-hover:text-orange-700 transition-colors duration-300">
                         {pendingActions.length} action{pendingActions.length !== 1 ? 's' : ''} pending
                       </p>
                     )}
                   </div>
-                  <div className={`p-3 ${stat.bgColor} rounded-lg`}>
-                    <Icon className={`h-6 w-6 ${stat.iconColor}`} />
+                  <div className={`p-3 ${stat.bgColor} rounded-lg group-hover:scale-110 group-hover:rotate-6 transform transition-all duration-300 shadow-sm group-hover:shadow-lg`}>
+                    <Icon className={`h-6 w-6 ${stat.iconColor} group-hover:scale-110 transition-transform duration-300`} />
                   </div>
                 </div>
               </div>
             )
           })}
+        </div>
+
+        {/* Search */}
+        <div className="mb-10 animate-slide-in-up animation-delay-600">
+          <div className="relative max-w-lg group">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-blue-500 group-hover:scale-110 transition-all duration-300" />
+            <input
+              type="text"
+              placeholder="Search your groups..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 hover:shadow-md focus:shadow-lg transition-all duration-300 transform focus:scale-105"
+            />
+          </div>
         </div>
 
         {/* Pending Actions Notification */}
@@ -2192,15 +2207,15 @@ const Dashboard = () => {
         )} */}
 
         {/* Groups Section */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-500 animate-slide-in-up animation-delay-800">
           <div className="p-8 border-b border-gray-200">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Your Groups</h2>
-                <p className="text-gray-600 mt-1">Manage and track all your peer-to-peer groups</p>
+                <h2 className="text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors duration-300">Your Groups</h2>
+                <p className="text-gray-600 mt-1 hover:text-gray-800 transition-colors duration-300">Manage and track all your peer-to-peer groups</p>
               </div>
               <div className="mt-4 sm:mt-0">
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 hover:text-gray-700 transition-colors duration-300">
                   Showing {filteredGroups.length} of {safeGroupsArray.length} groups
                 </p>
               </div>
@@ -2210,68 +2225,68 @@ const Dashboard = () => {
           <div className="p-8">
             {filteredGroups.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredGroups.map((member) => (
+                {filteredGroups.map((member, index) => (
                   <Link
                     key={member._id}
                     to={`/groups/${member.group?._id}`}
-                    className="group border border-gray-200 rounded-xl p-6 hover:border-blue-300 hover:shadow-md transition-all duration-200"
+                    className="group border border-gray-200 rounded-xl p-6 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-100 transition-all duration-300 cursor-pointer animate-fade-in-scale hover:-translate-y-2 transform"
+                    style={{ animationDelay: `${index * 100}ms` }}
                   >
                     <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-2">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-2 group-hover:scale-105 transform transition-transform duration-300 origin-left">
                           {member.group?.name}
                         </h3>
                         <div className="flex items-center gap-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium hover:scale-105 transform transition-all duration-300 ${
                             member.role === 'organizer'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-gray-100 text-gray-700'
+                              ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                           }`}>
                             {member.role}
                           </span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium hover:scale-105 transform transition-all duration-300 ${
                             member.group?.status === 'active'
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-gray-100 text-gray-700'
+                              ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                           }`}>
                             {member.group?.status}
                           </span>
                         </div>
                       </div>
-                      <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                      <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transform transition-all duration-300" />
                     </div>
                     
                     <div className="space-y-4 mb-6">
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg group-hover:bg-blue-50 transition-colors duration-300 hover:scale-105 transform">
                         <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm text-gray-600">Group Size</span>
+                          <Users className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-300" />
+                          <span className="text-sm text-gray-600 group-hover:text-blue-700 transition-colors duration-300">Group Size</span>
                         </div>
-                        <span className="font-semibold text-gray-900">{member.group?.groupSize || 0}</span>
+                        <span className="font-semibold text-gray-900 group-hover:text-blue-800 transition-colors duration-300">{member.group?.groupSize || 0}</span>
                       </div>
                       
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg group-hover:bg-emerald-50 transition-colors duration-300 hover:scale-105 transform">
                         <div className="flex items-center gap-2">
-                          
-<IndianRupee className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm text-gray-600">Per Cycle</span>
+                          <IndianRupee className="h-4 w-4 text-gray-400 group-hover:text-emerald-500 transition-colors duration-300" />
+                          <span className="text-sm text-gray-600 group-hover:text-emerald-700 transition-colors duration-300">Per Cycle</span>
                         </div>
-                        <span className="font-semibold text-gray-900">₹{member.group?.monthlyContribution}</span>
+                        <span className="font-semibold text-gray-900 group-hover:text-emerald-800 transition-colors duration-300">₹{member.group?.monthlyContribution}</span>
                       </div>
                       
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg group-hover:bg-purple-50 transition-colors duration-300 hover:scale-105 transform">
                         <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm text-gray-600">Duration</span>
+                          <Calendar className="h-4 w-4 text-gray-400 group-hover:text-purple-500 transition-colors duration-300" />
+                          <span className="text-sm text-gray-600 group-hover:text-purple-700 transition-colors duration-300">Duration</span>
                         </div>
-                        <span className="font-semibold text-gray-900">{member.group?.cycleLength || 1} months</span>
+                        <span className="font-semibold text-gray-900 group-hover:text-purple-800 transition-colors duration-300">{member.group?.cycleLength || 1} months</span>
                       </div>
                     </div>
 
-                    <div className="pt-6 border-t border-gray-100">
-                      <div className="flex items-center justify-center gap-2 text-blue-600 group-hover:text-blue-700 font-medium">
+                    <div className="pt-6 border-t border-gray-100 group-hover:border-blue-200 transition-colors duration-300">
+                      <div className="flex items-center justify-center gap-2 text-blue-600 group-hover:text-blue-700 font-medium group-hover:scale-105 transform transition-all duration-300">
                         <span>View Details</span>
-                        <ArrowRight className="h-4 w-4" />
+                        <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
                       </div>
                     </div>
                   </Link>
@@ -2280,8 +2295,8 @@ const Dashboard = () => {
             ) : (
               <div className="text-center py-12 px-4">
                 <div className="max-w-md mx-auto">
-                  <div className="w-16 h-16 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-6">
-                    <Users className="h-8 w-8 text-gray-400" />
+                  <div className="w-16 h-16 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-6 hover:bg-blue-100 hover:scale-110 transform transition-all duration-300 cursor-pointer">
+                    <Users className="h-8 w-8 text-gray-400 hover:text-blue-500 transition-colors duration-300" />
                   </div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
                     {searchTerm ? `No groups found` : 'No groups yet'}
@@ -2295,14 +2310,14 @@ const Dashboard = () => {
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <Link
                       to="/create-group"
-                      className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
+                      className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 hover:scale-105 active:scale-95 transform transition-all duration-300 font-medium shadow-lg hover:shadow-xl"
                     >
                       Create First Group
                     </Link>
                     {searchTerm && (
                       <button
                         onClick={() => setSearchTerm('')}
-                        className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+                        className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 hover:scale-105 active:scale-95 transform transition-all duration-300 font-medium"
                       >
                         Clear Search
                       </button>
@@ -2316,17 +2331,17 @@ const Dashboard = () => {
 
         {/* Pending Actions Modal */}
         {showPendingActions && pendingActions.length > 0 && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in">
+            <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden animate-scale-in">
               <div className="sticky top-0 bg-white border-b border-gray-200 p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold text-gray-900">Pending Actions</h2>
-                    <p className="text-sm text-gray-500 mt-1">Review and complete these actions</p>
+                  <div className="animate-slide-in-left">
+                    <h2 className="text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors duration-300">Pending Actions</h2>
+                    <p className="text-sm text-gray-500 mt-1 hover:text-gray-700 transition-colors duration-300">Review and complete these actions</p>
                   </div>
                   <button
                     onClick={() => setShowPendingActions(false)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="p-2 hover:bg-red-100 hover:text-red-600 rounded-lg transition-all duration-300 hover:scale-110 active:scale-95 transform animate-slide-in-right"
                   >
                     <span className="sr-only">Close</span>
                     <span className="text-gray-500 text-xl">×</span>
@@ -2335,45 +2350,43 @@ const Dashboard = () => {
               </div>
 
               <div className="divide-y divide-gray-200 overflow-y-auto max-h-[60vh]">
-                {pendingActions.map((action) => (
-                  <div key={action.id} className="p-6 hover:bg-gray-50 transition-colors">
+                {pendingActions.map((action, index) => (
+                  <div key={action.id} className="p-6 hover:bg-gray-50 hover:scale-[1.02] transform transition-all duration-300 animate-slide-in-up" style={{ animationDelay: `${index * 100}ms` }}>
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className={`w-2 h-2 rounded-full ${
+                        <div className="flex items-center gap-2 mb-2 group">
+                          <div className={`w-2 h-2 rounded-full group-hover:scale-150 transform transition-all duration-300 ${
                             action.status === 'pending' ? 'bg-orange-500' : 'bg-blue-500'
                           }`}></div>
-                          <h3 className="font-semibold text-gray-900">{action.title}</h3>
+                          <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-300">{action.title}</h3>
                         </div>
-                        <p className="text-sm text-gray-600 mb-3">{action.description}</p>
+                        <p className="text-sm text-gray-600 mb-3 hover:text-gray-800 transition-colors duration-300">{action.description}</p>
                         <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <span>Group: {action.groupName}</span>
+                          <span className="hover:text-gray-700 transition-colors duration-300">Group: {action.groupName}</span>
                           {action.amount && (
-                            <span className="font-medium">Amount: ₹{action.amount}</span>
+                            <span className="font-medium hover:text-green-600 transition-colors duration-300">Amount: ₹{action.amount}</span>
                           )}
                         </div>
                       </div>
                       
                       <div className="ml-4">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium hover:scale-110 transform transition-all duration-300 ${
                           action.status === 'pending' 
-                            ? 'bg-orange-100 text-orange-700' 
-                            : 'bg-blue-100 text-blue-700'
+                            ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' 
+                            : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                         }`}>
                           {action.status === 'pending' ? 'Pending' : 'To Review'}
                         </span>
                       </div>
                     </div>
 
-                    <div className="mt-4 flex gap-3">
+                    <div className="mt-4 flex gap-3 animate-slide-in-up animation-delay-200">
                       {action.type === 'payment' && (
                         <button 
                           onClick={() => navigate(`/groups/${action.groupId}`)}
-                          className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                          className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 hover:scale-105 active:scale-95 transform transition-all duration-300 flex items-center gap-2 shadow-md hover:shadow-lg"
                         >
-                          {/* <DollarSign className="h-4 w-4" /> */}
-
-<IndianRupee className="h-4 w-4 " />
+                          <IndianRupee className="h-4 w-4 hover:scale-110 transition-transform duration-300" />
                           Proceed to Pay
                         </button>
                       )}
@@ -2382,15 +2395,15 @@ const Dashboard = () => {
                           <button 
                             onClick={() => approveMutation.mutate(action.requestId)}
                             disabled={approveMutation.isLoading}
-                            className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+                            className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 hover:scale-105 active:scale-95 transform disabled:opacity-50 disabled:hover:scale-100 transition-all duration-300 flex items-center gap-2 shadow-md hover:shadow-lg"
                           >
-                            <UserCheck className="h-4 w-4" />
+                            <UserCheck className="h-4 w-4 hover:scale-110 transition-transform duration-300" />
                             {approveMutation.isLoading ? 'Approving...' : 'Approve'}
                           </button>
                           <button 
                             onClick={() => rejectMutation.mutate(action.requestId)}
                             disabled={rejectMutation.isLoading}
-                            className="px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 disabled:opacity-50 transition-colors"
+                            className="px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-red-100 hover:text-red-700 hover:scale-105 active:scale-95 transform disabled:opacity-50 disabled:hover:scale-100 transition-all duration-300 shadow-md hover:shadow-lg"
                           >
                             {rejectMutation.isLoading ? 'Rejecting...' : 'Reject'}
                           </button>
@@ -2403,9 +2416,9 @@ const Dashboard = () => {
                             paymentId: action.paymentId
                           })}
                           disabled={verifyPaymentMutation.isLoading}
-                          className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+                          className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 hover:scale-105 active:scale-95 transform disabled:opacity-50 disabled:hover:scale-100 transition-all duration-300 flex items-center gap-2 shadow-md hover:shadow-lg"
                           >
-                          <FileCheck className="h-4 w-4" />
+                          <FileCheck className="h-4 w-4 hover:scale-110 transition-transform duration-300" />
                           {verifyPaymentMutation.isLoading ? 'Verifying...' : 'Verify Payment'}
                         </button>
                       )}
